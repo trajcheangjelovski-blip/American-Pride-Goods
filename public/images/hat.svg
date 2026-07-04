@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <defs>
+    <linearGradient id="capRed" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff3b50"/>
+      <stop offset="1" stop-color="#b00e20"/>
+    </linearGradient>
+    <linearGradient id="brimRed" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d01327"/>
+      <stop offset="1" stop-color="#8a0a18"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="178" rx="80" ry="10" fill="#000" opacity="0.25"/>
+  <path d="M40 120 C40 60 200 60 200 120 L200 138 L40 138 Z" fill="url(#capRed)"/>
+  <path d="M55 118 C60 75 180 75 185 118" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="3"/>
+  <path d="M120 62 C90 62 60 85 55 118 L120 118 Z" fill="#ffffff" opacity="0.08"/>
+  <path d="M30 138 C30 128 210 128 210 138 C210 158 170 168 120 168 C70 168 30 158 30 138 Z" fill="url(#brimRed)"/>
+  <text x="120" y="112" text-anchor="middle" font-family="Arial Black, Arial" font-weight="900" font-size="19" fill="#ffffff">MAGA</text>
+  <text x="120" y="130" text-anchor="middle" font-family="Arial" font-weight="700" font-size="9" fill="#ffd968">MAKE AMERICA GREAT AGAIN</text>
+</svg>

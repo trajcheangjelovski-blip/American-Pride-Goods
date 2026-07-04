@@ -1,0 +1,66 @@
+[
+  {
+    "id": "maga-hat-red",
+    "name": "Classic Red MAGA Hat",
+    "description": "The iconic red cap. Embroidered in the USA with premium stitching.",
+    "price": 2999,
+    "badge": "BEST SELLER",
+    "image": "/images/hat.svg"
+  },
+  {
+    "id": "trump-tee-2024",
+    "name": "Trump 47 T-Shirt",
+    "description": "100% American cotton tee. Bold print, built to last.",
+    "price": 2499,
+    "badge": "NEW",
+    "image": "/images/tshirt.svg"
+  },
+  {
+    "id": "american-flag-xl",
+    "name": "American Flag XL (3x5 ft)",
+    "description": "Heavy-duty stars and stripes with brass grommets. Made in the USA.",
+    "price": 3999,
+    "badge": "",
+    "image": "/images/flag.svg"
+  },
+  {
+    "id": "trump-mug",
+    "name": "Trump Gold Mug",
+    "description": "Ceramic 15oz mug with gold-tone print. Dishwasher safe.",
+    "price": 1899,
+    "badge": "",
+    "image": "/images/mug.svg"
+  },
+  {
+    "id": "freedom-hoodie",
+    "name": "Freedom Eagle Hoodie",
+    "description": "Heavyweight fleece hoodie with soaring eagle print.",
+    "price": 5499,
+    "badge": "HOT",
+    "image": "/images/hoodie.svg"
+  },
+  {
+    "id": "trump-flag-banner",
+    "name": "Trump 2024 Banner Flag",
+    "description": "Double-sided 3x5 ft banner flag. UV and fade resistant.",
+    "price": 3499,
+    "badge": "",
+    "image": "/images/banner.svg"
+  },
+  {
+    "id": "patriot-sticker-pack",
+    "name": "Patriot Sticker Pack (10 pcs)",
+    "description": "Waterproof vinyl stickers for cars, laptops and coolers.",
+    "price": 1299,
+    "badge": "",
+    "image": "/images/stickers.svg"
+  },
+  {
+    "id": "gold-coin-trump",
+    "name": "Trump Commemorative Gold Coin",
+    "description": "Gold-plated collector coin in a protective display case.",
+    "price": 2199,
+    "badge": "LIMITED",
+    "image": "/images/coin.svg"
+  }
+]

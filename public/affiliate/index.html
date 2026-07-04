@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Affiliate Portal — American Pride Store</title>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>" />
+  <style>
+    :root {
+      --navy-950: #060b1a; --navy-900: #0a1228; --navy-800: #111d3d;
+      --red-500: #e0162b; --red-400: #ff2d44; --gold-400: #f5c542; --gold-300: #ffd968;
+      --white: #fff; --grey-300: #b8c2d8; --grey-400: #8b96b0; --green: #2ecc71;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: var(--navy-950); color: var(--white); min-height: 100vh; }
+    a { color: var(--gold-300); }
+    button { font-family: inherit; cursor: pointer; }
+    input, select, textarea {
+      font-family: inherit; font-size: 0.95rem; color: var(--white);
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 10px; padding: 12px 15px; width: 100%; outline: none; transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--gold-400); }
+    select option { background: var(--navy-800); }
+    label { display: block; font-size: 0.76rem; font-weight: 700; color: var(--grey-400); margin: 14px 0 6px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 999px; padding: 13px 26px; font-weight: 800; font-size: 0.88rem; letter-spacing: 0.04em; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-red { background: linear-gradient(100deg, var(--red-500), #b00e20); color: #fff; box-shadow: 0 10px 30px -10px rgba(224,22,43,0.6); }
+    .btn-ghost { background: rgba(255,255,255,0.07); color: var(--white); border: 1px solid rgba(255,255,255,0.16); }
+    .err { color: var(--red-400); font-size: 0.85rem; min-height: 1.2em; margin-top: 12px; text-align: center; }
+    .ok-msg { color: var(--green); font-size: 0.9rem; text-align: center; margin-top: 12px; }
+    .muted { color: var(--grey-400); }
+    .empty { padding: 36px; text-align: center; color: var(--grey-400); }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 26px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .logo { font-family: 'Archivo Black'; font-size: 1.05rem; color: var(--white); text-decoration: none; }
+    .logo em { color: var(--red-400); font-style: normal; }
+    .logo .star { color: var(--gold-400); margin-right: 6px; }
+
+    /* ---------- AUTH ---------- */
+    .auth-wrap { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 60px; align-items: center; }
+    .pitch h1 { font-family: 'Archivo Black'; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.05; margin-bottom: 20px; }
+    .pitch .grad { background: linear-gradient(100deg, var(--red-400), var(--gold-400)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .pitch p { color: var(--grey-300); font-size: 1.05rem; line-height: 1.7; margin-bottom: 28px; max-width: 460px; }
+    .perks { display: flex; flex-direction: column; gap: 14px; }
+    .perk { display: flex; gap: 14px; align-items: flex-start; }
+    .perk .ico { font-size: 1.4rem; }
+    .perk b { display: block; font-size: 0.95rem; }
+    .perk span { color: var(--grey-400); font-size: 0.85rem; }
+    .auth-card { padding: 34px 32px; border-radius: 22px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px); animation: cardIn 0.6s cubic-bezier(0.22,1,0.36,1); }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
+    .tabs { display: flex; gap: 8px; background: rgba(255,255,255,0.05); border-radius: 999px; padding: 5px; margin-bottom: 22px; }
+    .tab { flex: 1; border: none; background: none; color: var(--grey-300); font-weight: 700; font-size: 0.88rem; padding: 10px; border-radius: 999px; transition: all 0.25s; }
+    .tab.active { background: linear-gradient(100deg, var(--red-500), #b00e20); color: #fff; }
+    .closed-note { background: rgba(245,197,66,0.1); border: 1px solid rgba(245,197,66,0.3); color: var(--gold-300); border-radius: 12px; padding: 14px 16px; font-size: 0.88rem; line-height: 1.55; margin-bottom: 18px; }
+
+    /* ---------- PORTAL (logged in) ---------- */
+    .portal { display: none; min-height: calc(100vh - 63px); }
+    .portal.on { display: flex; }
+    .side { width: 240px; flex-shrink: 0; background: var(--navy-900); border-right: 1px solid rgba(255,255,255,0.07); padding: 22px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .side .who { padding: 6px 12px 18px; }
+    .side .who b { display: block; font-size: 0.95rem; }
+    .side .who span { font-size: 0.76rem; color: var(--grey-400); }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; border: none; background: none; color: var(--grey-300); font-weight: 600; font-size: 0.9rem; text-align: left; width: 100%; transition: background 0.2s, color 0.2s; }
+    .nav-item:hover { background: rgba(255,255,255,0.06); color: var(--white); }
+    .nav-item.active { background: linear-gradient(100deg, rgba(224,22,43,0.25), rgba(224,22,43,0.08)); color: var(--white); border-left: 3px solid var(--red-500); }
+    .nav-badge { margin-left: auto; background: var(--red-500); color: #fff; font-size: 0.68rem; font-weight: 800; border-radius: 999px; min-width: 20px; height: 20px; display: inline-grid; place-items: center; padding: 0 6px; }
+    .side .spacer { flex: 1; }
+    .content { flex: 1; padding: 30px 34px; min-width: 0; }
+    .content h1 { font-family: 'Archivo Black'; font-size: 1.5rem; margin-bottom: 22px; }
+    .content h1 .hi { color: var(--gold-300); }
+
+    .panel { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; margin-bottom: 22px; }
+    .panel > h3 { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 0.98rem; }
+    .panel-body { padding: 20px; }
+    .status-banner { padding: 14px 18px; border-radius: 12px; margin-bottom: 22px; font-size: 0.9rem; line-height: 1.55; }
+    .status-banner.pending { background: rgba(245,197,66,0.1); border: 1px solid rgba(245,197,66,0.35); color: var(--gold-300); }
+    .status-banner.suspended { background: rgba(224,22,43,0.1); border: 1px solid rgba(224,22,43,0.35); color: var(--red-400); }
+
+    .link-card { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding: 20px; border-radius: 14px; margin-bottom: 22px; background: linear-gradient(120deg, rgba(224,22,43,0.15), rgba(30,63,160,0.2)); border: 1px solid rgba(255,255,255,0.12); }
+    .link-card .lbl { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.14em; color: var(--gold-300); width: 100%; }
+    .link-card code { flex: 1; min-width: 200px; background: rgba(0,0,0,0.35); padding: 12px 15px; border-radius: 10px; font-size: 0.86rem; color: var(--gold-300); overflow-x: auto; white-space: nowrap; }
+    .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 22px; }
+    .stat-card { padding: 18px; border-radius: 14px; background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.09); }
+    .stat-card .k { color: var(--grey-400); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .stat-card .v { font-family: 'Archivo Black'; font-size: 1.5rem; margin-top: 8px; }
+    .stat-card .v.gold { color: var(--gold-300); }
+    .stat-card .v.green { color: var(--green); }
+
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 420px; }
+    th { text-align: left; padding: 12px 20px; color: var(--grey-400); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    td { padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    tr:last-child td { border-bottom: none; }
+    .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; }
+    .pill.paid { background: rgba(46,204,113,0.15); color: var(--green); }
+    .pill.pending { background: rgba(245,197,66,0.15); color: var(--gold-300); }
+
+    /* chat */
+    .msg-badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--red-500); color: #fff; font-size: 0.7rem; font-weight: 800; margin-left: 8px; }
+    .msg-thread { max-height: 400px; overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+    .msg { max-width: 78%; padding: 10px 14px; border-radius: 14px; font-size: 0.9rem; line-height: 1.45; }
+    .msg .when { display: block; font-size: 0.68rem; color: var(--grey-400); margin-top: 4px; }
+    .msg.mine { align-self: flex-end; background: linear-gradient(100deg, var(--red-500), #b00e20); color: #fff; border-bottom-right-radius: 4px; }
+    .msg.mine .when { color: rgba(255,255,255,0.7); }
+    .msg.theirs { align-self: flex-start; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-bottom-left-radius: 4px; }
+    .msg-compose { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .msg-compose input { flex: 1; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    .asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+    .asset { border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.03); }
+    .asset-img { aspect-ratio: 1; background: radial-gradient(ellipse, rgba(30,63,160,0.3), rgba(6,11,26,0.4)); display: grid; place-items: center; }
+    .asset-img img { width: 100%; height: 100%; object-fit: cover; }
+    .asset-body { padding: 12px; }
+    .asset-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 2px; }
+    .asset-prod { font-size: 0.72rem; color: var(--gold-300); margin-bottom: 8px; }
+    .asset-desc { font-size: 0.76rem; color: var(--grey-400); line-height: 1.45; margin-bottom: 10px; white-space: pre-wrap; }
+    .asset-actions { display: flex; gap: 8px; }
+    .asset-actions .btn { flex: 1; padding: 9px; font-size: 0.72rem; }
+
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(90px); background: linear-gradient(100deg, #2ecc71, #1d9d54); color: #fff; font-weight: 700; font-size: 0.9rem; padding: 13px 26px; border-radius: 999px; z-index: 300; transition: transform 0.35s cubic-bezier(0.22,1,0.36,1); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.error { background: linear-gradient(100deg, var(--red-500), #b00e20); }
+
+    @media (max-width: 860px) {
+      .auth-wrap { grid-template-columns: 1fr; gap: 36px; }
+      .portal.on { flex-direction: column; }
+      .side { width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 12px; }
+      .side .who { display: none; }
+      .nav-item { width: auto; padding: 9px 12px; font-size: 0.82rem; }
+      .nav-item .ico { display: none; }
+      .side .spacer { display: none; }
+      .content { padding: 20px 14px; }
+      .row2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <a class="logo" href="/"><span class="star">★</span>AMERICAN<em>PRIDE</em> · Affiliate</a>
+  </div>
+
+  <!-- ============ AUTH ============ -->
+  <div class="auth-wrap" id="auth-view">
+    <div class="pitch">
+      <h1>EARN WITH <span class="grad">EVERY SALE</span> YOU SEND</h1>
+      <p>Share your personal link, and every order that comes through it earns you a commission — a share of the profit, at the rate we agree together.</p>
+      <div class="perks">
+        <div class="perk"><span class="ico">🔗</span><div><b>Your personal link</b><span>A unique referral link, plus per-product links.</span></div></div>
+        <div class="perk"><span class="ico">💵</span><div><b>Real commission</b><span>Earn an agreed % of the profit on every sale.</span></div></div>
+        <div class="perk"><span class="ico">📊</span><div><b>Live dashboard</b><span>Track clicks, orders, earnings and payouts.</span></div></div>
+        <div class="perk"><span class="ico">💬</span><div><b>Direct line</b><span>Message the store owner anytime.</span></div></div>
+      </div>
+    </div>
+
+    <div class="auth-card">
+      <div class="tabs">
+        <button class="tab active" data-tab="login">Log in</button>
+        <button class="tab" data-tab="apply">Apply</button>
+      </div>
+
+      <form id="login-form">
+        <label>Email</label>
+        <input type="email" id="li-email" required autocomplete="email" />
+        <label>Password</label>
+        <input type="password" id="li-pass" required autocomplete="current-password" />
+        <div class="err" id="li-err"></div>
+        <button class="btn btn-red" style="width:100%;margin-top:10px" type="submit">LOG IN</button>
+      </form>
+
+      <div id="apply-form" style="display:none">
+        <div class="closed-note">🔒 <b>Sign-ups are closed.</b> New affiliate accounts are opened by the store owner only. Want to join? Send us a message below and we'll get back to you.</div>
+        <form id="contact-form">
+          <label>Your name</label>
+          <input id="ct-name" required maxlength="80" />
+          <label>Email</label>
+          <input type="email" id="ct-email" required autocomplete="email" />
+          <label>Message</label>
+          <textarea id="ct-body" rows="3" required maxlength="2000" placeholder="Tell us how you'd promote our products…"></textarea>
+          <div class="err" id="ct-err"></div>
+          <div class="ok-msg" id="ct-ok"></div>
+          <button class="btn btn-red" style="width:100%;margin-top:10px" type="submit">SEND MESSAGE</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PORTAL ============ -->
+  <div class="portal" id="portal">
+    <aside class="side">
+      <div class="who"><b id="who-name"></b><span id="who-code"></span></div>
+      <button class="nav-item active" data-sec="dashboard"><span class="ico">📊</span> Dashboard</button>
+      <button class="nav-item" data-sec="links"><span class="ico">🔗</span> Product links</button>
+      <button class="nav-item" data-sec="pricing"><span class="ico">🏷️</span> My pricing</button>
+      <button class="nav-item" data-sec="marketing"><span class="ico">🖼️</span> Marketing</button>
+      <button class="nav-item" data-sec="messages"><span class="ico">💬</span> Messages <span class="nav-badge" id="msg-badge" style="display:none"></span></button>
+      <button class="nav-item" data-sec="payouts"><span class="ico">💵</span> Payouts</button>
+      <button class="nav-item" data-sec="payoutinfo"><span class="ico">🏦</span> Payout info</button>
+      <button class="nav-item" data-sec="settings"><span class="ico">⚙️</span> Settings</button>
+      <div class="spacer"></div>
+      <button class="nav-item" onclick="location.href='/'"><span class="ico">🏪</span> View store</button>
+      <button class="nav-item" id="logout-btn"><span class="ico">🚪</span> Log out</button>
+    </aside>
+
+    <main class="content">
+      <!-- DASHBOARD -->
+      <section id="sec-dashboard">
+        <h1>Welcome back, <span class="hi" id="dash-name"></span> 👋</h1>
+        <div id="status-banner"></div>
+        <div class="link-card">
+          <span class="lbl">YOUR REFERRAL LINK</span>
+          <code id="aff-link"></code>
+          <button class="btn btn-red" id="copy-btn" style="padding:12px 22px;font-size:0.82rem">COPY</button>
+        </div>
+        <div class="stat-cards" id="aff-stats"></div>
+        <div class="panel">
+          <h3>Your clicks by product</h3>
+          <div class="table-scroll"><table><thead><tr><th>Product</th><th>Clicks</th></tr></thead><tbody id="aff-clicks"></tbody></table></div>
+        </div>
+        <div class="panel">
+          <h3>Your referred orders</h3>
+          <div class="table-scroll"><table><thead><tr><th>Order</th><th>Total</th><th>Your commission</th><th>Date</th></tr></thead><tbody id="aff-orders"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- PRODUCT LINKS -->
+      <section id="sec-links" style="display:none">
+        <h1>Product links</h1>
+        <div class="panel"><div class="panel-body">
+          <p class="muted" style="font-size:0.9rem;margin-bottom:14px">Pick any product to get a referral link straight to it.</p>
+          <select id="prod-select"></select>
+          <div class="link-card" style="margin-top:16px;margin-bottom:0">
+            <code id="prod-link">Select a product…</code>
+            <button class="btn btn-red" id="prod-copy" style="padding:12px 22px;font-size:0.82rem">COPY</button>
+          </div>
+        </div></div>
+      </section>
+
+      <!-- MY PRICING -->
+      <section id="sec-pricing" style="display:none">
+        <h1>My pricing</h1>
+        <div class="panel"><div class="panel-body">
+          <p class="muted" style="font-size:0.9rem;margin-bottom:6px">Set your own price for any product — it applies only to buyers who come through <b>your</b> link. You can raise the price to earn more (your commission is a % of the profit). You can't go below the store price. Leave empty to use the store price.</p>
+          <div class="table-scroll" style="margin-top:12px"><table>
+            <thead><tr><th>Product</th><th>Store price</th><th>Your price</th><th></th></tr></thead>
+            <tbody id="pricing-body"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+          </table></div>
+        </div></div>
+      </section>
+
+      <!-- MARKETING -->
+      <section id="sec-marketing" style="display:none">
+        <h1>Marketing materials</h1>
+        <div class="panel"><div class="panel-body">
+          <p class="muted" style="font-size:0.9rem;margin-bottom:16px">Posters and product images from the store. Download them or copy to share on social media — your referral is tracked separately, so just add your link.</p>
+          <div class="asset-grid" id="asset-grid"><p class="empty">Loading…</p></div>
+        </div></div>
+      </section>
+
+      <!-- MESSAGES -->
+      <section id="sec-messages" style="display:none">
+        <h1>Messages with the Admins</h1>
+        <div class="panel">
+          <div class="msg-thread" id="msg-thread"><p class="empty">Loading…</p></div>
+          <form class="msg-compose" id="msg-form">
+            <input id="msg-input" placeholder="Write a message to the store owner…" maxlength="2000" autocomplete="off" />
+            <button class="btn btn-red" type="submit" style="padding:12px 22px">Send</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- PAYOUTS -->
+      <section id="sec-payouts" style="display:none">
+        <h1>Payouts</h1>
+        <div class="stat-cards" id="payout-stats"></div>
+        <div class="panel">
+          <h3>Payout history</h3>
+          <div class="table-scroll"><table><thead><tr><th>Amount</th><th>Method</th><th>Status</th><th>Note</th><th>Date</th></tr></thead><tbody id="payout-list"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- PAYOUT INFO -->
+      <section id="sec-payoutinfo" style="display:none">
+        <h1>Payout info</h1>
+        <div class="panel"><div class="panel-body">
+          <p class="muted" style="font-size:0.9rem;margin-bottom:6px">Tell us how you'd like to be paid. Only the store owner can see this.</p>
+          <form id="payoutinfo-form">
+            <label>Method</label>
+            <select id="pi-method">
+              <option value="Wise">Wise</option>
+              <option value="Payoneer">Payoneer</option>
+              <option value="Bank transfer">Bank transfer</option>
+              <option value="PayPal">PayPal</option>
+              <option value="Other">Other</option>
+            </select>
+            <label>Details</label>
+            <textarea id="pi-details" rows="5" maxlength="1000" placeholder="e.g. Wise email, IBAN / account number, account holder name, bank, country…"></textarea>
+            <div class="ok-msg" id="pi-ok"></div>
+            <div class="err" id="pi-err"></div>
+            <button class="btn btn-red" style="margin-top:14px" type="submit">Save payout info</button>
+          </form>
+        </div></div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="sec-settings" style="display:none">
+        <h1>Settings</h1>
+        <div class="panel"><div class="panel-body">
+          <h3 style="border:none;padding:0 0 4px;font-size:1rem">Change password</h3>
+          <form id="password-form">
+            <label>Current password</label>
+            <input type="password" id="pw-current" required autocomplete="current-password" />
+            <label>New password (min 6 characters)</label>
+            <input type="password" id="pw-new" required minlength="6" autocomplete="new-password" />
+            <div class="ok-msg" id="pw-ok"></div>
+            <div class="err" id="pw-err"></div>
+            <button class="btn btn-red" style="margin-top:14px" type="submit">Update password</button>
+          </form>
+        </div></div>
+        <div class="panel"><div class="panel-body">
+          <p class="muted" style="font-size:0.9rem">Signed in as <b id="set-email" style="color:var(--white)"></b></p>
+        </div></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const fmt = (c) => '$' + ((c || 0) / 100).toFixed(2);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    let MY_CODE = '';
+    let toastTimer;
+    function toast(msg, isError) {
+      const t = $('#toast'); t.textContent = msg; t.classList.toggle('error', !!isError); t.classList.add('show');
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+    }
+    async function api(path, method = 'GET', body) {
+      const res = await fetch(path, { method, headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    }
+
+    /* ---- auth tabs ---- */
+    document.querySelectorAll('.tab').forEach((t) => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x === t));
+        $('#login-form').style.display = t.dataset.tab === 'login' ? '' : 'none';
+        $('#apply-form').style.display = t.dataset.tab === 'apply' ? '' : 'none';
+      });
+    });
+
+    $('#login-form').addEventListener('submit', async (e) => {
+      e.preventDefault(); $('#li-err').textContent = '';
+      try { await api('/api/affiliate/login', 'POST', { email: $('#li-email').value, password: $('#li-pass').value }); loadPortal(); }
+      catch (err) { $('#li-err').textContent = err.message; }
+    });
+
+    $('#contact-form').addEventListener('submit', async (e) => {
+      e.preventDefault(); $('#ct-err').textContent = ''; $('#ct-ok').textContent = '';
+      try {
+        await api('/api/affiliate/contact', 'POST', { name: $('#ct-name').value, email: $('#ct-email').value, body: $('#ct-body').value });
+        $('#ct-ok').textContent = 'Thanks! Your message was sent — we\'ll be in touch. 🇺🇸';
+        $('#contact-form').reset();
+      } catch (err) { $('#ct-err').textContent = err.message; }
+    });
+
+    /* ---- portal nav ---- */
+    document.querySelectorAll('.nav-item[data-sec]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item[data-sec]').forEach((b) => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('.content > section').forEach((s) => { s.style.display = 'none'; });
+        $('#sec-' + btn.dataset.sec).style.display = '';
+        if (btn.dataset.sec === 'messages') loadMessages();
+        if (btn.dataset.sec === 'marketing') loadMarketing();
+        if (btn.dataset.sec === 'pricing') loadPricing();
+      });
+    });
+
+    $('#logout-btn').addEventListener('click', async () => {
+      await api('/api/affiliate/logout', 'POST', {});
+      $('#portal').classList.remove('on'); $('#auth-view').style.display = 'grid';
+    });
+
+    async function loadPortal() {
+      let me;
+      try { me = await api('/api/affiliate/me'); } catch { return; }
+      $('#auth-view').style.display = 'none';
+      $('#portal').classList.add('on');
+
+      MY_CODE = me.code;
+      $('#who-name').textContent = me.name;
+      $('#who-code').textContent = 'Code: ' + me.code;
+      $('#dash-name').textContent = me.name;
+      $('#set-email').textContent = me.email;
+      $('#aff-link').textContent = me.link;
+
+      const banner = $('#status-banner');
+      if (me.status === 'pending') banner.innerHTML = '<div class="status-banner pending">⏳ <b>Your account is awaiting approval.</b> Your link works, but commissions only count once the store owner approves you.</div>';
+      else if (me.status === 'suspended') banner.innerHTML = '<div class="status-banner suspended">⛔ <b>Your account is suspended.</b> Message the store owner for details.</div>';
+      else banner.innerHTML = '';
+
+      const badge = $('#msg-badge');
+      if (me.unread > 0) { badge.textContent = me.unread; badge.style.display = ''; } else badge.style.display = 'none';
+
+      $('#aff-stats').innerHTML = `
+        <div class="stat-card"><div class="k">Commission (of profit)</div><div class="v gold">${me.commission_pct}%</div></div>
+        <div class="stat-card"><div class="k">Link clicks</div><div class="v">${me.clicks}</div></div>
+        <div class="stat-card"><div class="k">Orders</div><div class="v">${me.stats.orders}</div></div>
+        <div class="stat-card"><div class="k">Conversion</div><div class="v gold">${me.clicks > 0 ? (Math.round((me.stats.orders / me.clicks) * 1000) / 10) + '%' : '—'}</div></div>
+        <div class="stat-card"><div class="k">Sales generated</div><div class="v">${fmt(me.stats.sales)}</div></div>
+        <div class="stat-card"><div class="k">Total earned</div><div class="v green">${fmt(me.stats.earned)}</div></div>`;
+
+      $('#aff-orders').innerHTML = me.orders.length
+        ? me.orders.map((o) => `<tr><td>#${o.id}</td><td>${fmt(o.amount_total)}</td><td><b style="color:var(--green)">${fmt(o.commission)}</b></td><td class="muted">${o.created_at.slice(0, 16)}</td></tr>`).join('')
+        : '<tr><td colspan="4" class="empty">No orders yet — share your link to start earning! 🚀</td></tr>';
+
+      // payout info form
+      try { const pi = JSON.parse(me.payout_info || '{}'); if (pi.method) $('#pi-method').value = pi.method; $('#pi-details').value = pi.details || ''; } catch {}
+
+      setupProductLinks();
+      loadPayouts();
+      loadClicks();
+    }
+
+    async function loadClicks() {
+      try {
+        const rows = await api('/api/affiliate/clicks');
+        $('#aff-clicks').innerHTML = rows.length
+          ? rows.map((r) => `<tr><td>${esc(r.product_name || r.path)}</td><td><b>${r.views}</b></td></tr>`).join('')
+          : '<tr><td colspan="2" class="empty">No product clicks yet — share your links! 🔗</td></tr>';
+      } catch {}
+    }
+
+    /* ---- my pricing ---- */
+    async function loadPricing() {
+      const body = $('#pricing-body');
+      try {
+        const rows = await api('/api/affiliate/prices');
+        body.innerHTML = rows.length
+          ? rows.map((r) => `
+            <tr>
+              <td><b>${esc(r.name)}</b></td>
+              <td class="muted">$${(r.platform_price / 100).toFixed(2)}</td>
+              <td><input type="number" step="0.01" min="${(r.platform_price / 100).toFixed(2)}" value="${r.my_price ? (r.my_price / 100).toFixed(2) : ''}" placeholder="store price" data-slug="${esc(r.slug)}" style="width:120px" /></td>
+              <td><button class="btn btn-red" style="padding:9px 16px;font-size:0.78rem" onclick="savePrice('${esc(r.slug)}', this)">Save</button></td>
+            </tr>`).join('')
+          : '<tr><td colspan="4" class="empty">No products yet.</td></tr>';
+      } catch { body.innerHTML = '<tr><td colspan="4" class="empty">Could not load.</td></tr>'; }
+    }
+    async function savePrice(slug, btn) {
+      const input = btn.closest('tr').querySelector('input[data-slug]');
+      const val = input.value.trim();
+      const price = val === '' ? 0 : Math.round(parseFloat(val) * 100);
+      try {
+        const r = await api('/api/affiliate/prices', 'POST', { slug, price });
+        toast(r.cleared ? 'Reset to store price ✓' : 'Your price saved ✓');
+      } catch (err) { toast(err.message, true); }
+    }
+
+    /* ---- marketing ---- */
+    async function loadMarketing() {
+      const grid = $('#asset-grid');
+      try {
+        const list = await api('/api/affiliate/marketing');
+        grid.innerHTML = list.length
+          ? list.map((m) => `
+            <div class="asset">
+              <div class="asset-img"><img src="${esc(m.path)}" alt="${esc(m.title)}" /></div>
+              <div class="asset-body">
+                <div class="asset-title">${esc(m.title) || 'Untitled'}</div>
+                ${m.product_name ? `<div class="asset-prod">${esc(m.product_name)}</div>` : ''}
+                ${m.description ? `<div class="asset-desc">${esc(m.description)}</div>` : ''}
+                <div class="asset-actions">
+                  <a class="btn btn-red" href="${esc(m.path)}" download>Download</a>
+                  <button class="btn btn-ghost" onclick="copyAsset('${esc(m.path)}', this)">Copy</button>
+                </div>
+              </div>
+            </div>`).join('')
+          : '<p class="empty">No marketing materials yet — check back soon!</p>';
+      } catch { grid.innerHTML = '<p class="empty">Could not load materials.</p>'; }
+    }
+    async function copyAsset(path, btn) {
+      try {
+        const blob = await (await fetch(path)).blob();
+        if (navigator.clipboard && window.ClipboardItem) {
+          await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+          toast('Image copied — paste it anywhere! 📋');
+        } else { throw new Error('no clipboard'); }
+      } catch {
+        try { await navigator.clipboard.writeText(location.origin + path); toast('Image link copied 📋'); }
+        catch { toast('Could not copy — use Download instead', true); }
+      }
+    }
+
+    /* ---- product links ---- */
+    async function setupProductLinks() {
+      const sel = $('#prod-select');
+      if (!sel.dataset.loaded) {
+        try {
+          const products = await (await fetch('/api/products')).json();
+          sel.innerHTML = products.map((p) => `<option value="${esc(p.slug)}">${esc(p.name)}</option>`).join('');
+          sel.dataset.loaded = '1';
+        } catch {}
+      }
+      updateProdLink();
+    }
+    function updateProdLink() {
+      const slug = $('#prod-select').value;
+      $('#prod-link').textContent = slug ? `${location.origin}/product/${slug}?ref=${MY_CODE}` : 'No products yet.';
+    }
+    $('#prod-select').addEventListener('change', updateProdLink);
+    async function copyText(t) { try { await navigator.clipboard.writeText(t); } catch {} toast('Copied! 🎉'); }
+    $('#copy-btn').addEventListener('click', () => copyText($('#aff-link').textContent));
+    $('#prod-copy').addEventListener('click', () => copyText($('#prod-link').textContent));
+
+    /* ---- messages ---- */
+    async function loadMessages() {
+      try {
+        const list = await (await fetch('/api/affiliate/messages')).json();
+        const box = $('#msg-thread');
+        box.innerHTML = list.length
+          ? list.map((m) => `<div class="msg ${m.sender === 'affiliate' ? 'mine' : 'theirs'}">${esc(m.body)}<span class="when">${m.sender === 'affiliate' ? 'You' : 'Store'} · ${m.created_at.slice(0, 16)}</span></div>`).join('')
+          : '<p class="empty">No messages yet. Say hello to the store owner! 👋</p>';
+        box.scrollTop = box.scrollHeight;
+        $('#msg-badge').style.display = 'none';
+      } catch {}
+    }
+    $('#msg-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = $('#msg-input'); const body = input.value.trim();
+      if (!body) return; input.value = '';
+      try { await api('/api/affiliate/messages', 'POST', { body }); loadMessages(); }
+      catch (err) { toast(err.message, true); input.value = body; }
+    });
+
+    /* ---- payouts ---- */
+    async function loadPayouts() {
+      try {
+        const p = await api('/api/affiliate/payouts');
+        $('#payout-stats').innerHTML = `
+          <div class="stat-card"><div class="k">Paid out</div><div class="v green">${fmt(p.paid)}</div></div>
+          <div class="stat-card"><div class="k">Pending</div><div class="v gold">${fmt(p.pending)}</div></div>`;
+        $('#payout-list').innerHTML = p.list.length
+          ? p.list.map((x) => `<tr><td><b>${fmt(x.amount)}</b></td><td>${esc(x.method) || '—'}</td><td><span class="pill ${x.status}">${x.status.toUpperCase()}</span></td><td class="muted">${esc(x.note) || '—'}</td><td class="muted">${(x.status === 'paid' && x.paid_at ? x.paid_at : x.created_at).slice(0, 16)}</td></tr>`).join('')
+          : '<tr><td colspan="5" class="empty">No payouts yet. Your earnings appear here once the store owner sends a payout.</td></tr>';
+      } catch {}
+    }
+
+    /* ---- payout info ---- */
+    $('#payoutinfo-form').addEventListener('submit', async (e) => {
+      e.preventDefault(); $('#pi-ok').textContent = ''; $('#pi-err').textContent = '';
+      try {
+        await api('/api/affiliate/payout-info', 'POST', { method: $('#pi-method').value, details: $('#pi-details').value });
+        $('#pi-ok').textContent = 'Saved ✓';
+      } catch (err) { $('#pi-err').textContent = err.message; }
+    });
+
+    /* ---- password ---- */
+    $('#password-form').addEventListener('submit', async (e) => {
+      e.preventDefault(); $('#pw-ok').textContent = ''; $('#pw-err').textContent = '';
+      try {
+        await api('/api/affiliate/password', 'POST', { current: $('#pw-current').value, next: $('#pw-new').value });
+        $('#pw-ok').textContent = 'Password updated ✓';
+        $('#password-form').reset();
+      } catch (err) { $('#pw-err').textContent = err.message; }
+    });
+
+    loadPortal();
+  </script>
+</body>
+</html>

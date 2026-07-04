@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <ellipse cx="125" cy="186" rx="85" ry="8" fill="#000" opacity="0.25"/>
+  <rect x="34" y="14" width="6" height="172" rx="3" fill="#c9a04a"/>
+  <circle cx="37" cy="12" r="7" fill="#ffd968"/>
+  <path d="M40 26 C95 16 150 34 212 26 L212 128 C150 136 95 118 40 128 Z" fill="#1e3fa0"/>
+  <path d="M40 26 C95 16 150 34 212 26 L212 40 C150 48 95 30 40 40 Z" fill="#e0162b"/>
+  <path d="M40 114 C95 104 150 122 212 114 L212 128 C150 136 95 118 40 128 Z" fill="#e0162b"/>
+  <text x="126" y="76" text-anchor="middle" font-family="Arial Black, Arial" font-weight="900" font-size="26" fill="#ffffff" transform="rotate(2 126 76)">TRUMP</text>
+  <text x="126" y="98" text-anchor="middle" font-family="Arial Black, Arial" font-weight="900" font-size="16" fill="#ffd968" transform="rotate(2 126 98)">★ 2024 ★</text>
+</svg>

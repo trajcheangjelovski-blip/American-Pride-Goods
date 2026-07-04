@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <defs>
+    <linearGradient id="hoodGrey" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a4666"/>
+      <stop offset="1" stop-color="#1a2340"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="188" rx="78" ry="8" fill="#000" opacity="0.25"/>
+  <path d="M88 34 L58 48 L32 80 L52 102 L66 90 L66 182 L174 182 L174 90 L188 102 L208 80 L182 48 L152 34 C152 34 142 52 120 52 C98 52 88 34 88 34 Z" fill="url(#hoodGrey)"/>
+  <path d="M88 34 C88 34 82 20 120 20 C158 20 152 34 152 34 C152 34 142 52 120 52 C98 52 88 34 88 34 Z" fill="#141c33"/>
+  <path d="M104 52 L104 74 M136 52 L136 74" stroke="#ffd968" stroke-width="4" stroke-linecap="round"/>
+  <rect x="80" y="150" width="80" height="32" rx="8" fill="#141c33" opacity="0.6"/>
+  <g transform="translate(120 108)">
+    <path d="M0 -26 C10 -20 26 -22 34 -34 C32 -18 24 -8 12 -4 L30 2 C16 6 4 4 -4 -2 L-8 14 L-14 -4 C-26 -6 -34 -14 -36 -26 C-26 -18 -12 -18 -4 -22 Z" fill="#ffd968"/>
+    <circle cx="8" cy="-27" r="2.4" fill="#141c33"/>
+  </g>
+  <text x="120" y="142" text-anchor="middle" font-family="Arial Black, Arial" font-weight="900" font-size="13" fill="#ff3b50">FREEDOM</text>
+</svg>

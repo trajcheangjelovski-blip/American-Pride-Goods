@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <ellipse cx="120" cy="184" rx="80" ry="8" fill="#000" opacity="0.25"/>
+  <g transform="rotate(-8 80 80)">
+    <circle cx="80" cy="78" r="46" fill="#e0162b"/>
+    <circle cx="80" cy="78" r="46" fill="none" stroke="#ffffff" stroke-width="4"/>
+    <text x="80" y="72" text-anchor="middle" font-family="Arial Black, Arial" font-weight="900" font-size="14" fill="#ffffff">USA</text>
+    <text x="80" y="92" text-anchor="middle" font-family="Arial" font-size="13" fill="#ffd968">★ ★ ★</text>
+  </g>
+  <g transform="rotate(7 165 105)">
+    <rect x="118" y="66" width="94" height="60" rx="12" fill="#1e3fa0"/>
+    <rect x="118" y="66" width="94" height="60" rx="12" fill="none" stroke="#ffffff" stroke-width="4"/>
+    <text x="165" y="92" text-anchor="middle" font-family="Arial Black, Arial" font-weight="900" font-size="13" fill="#ffffff">TRUMP</text>
+    <text x="165" y="110" text-anchor="middle" font-family="Arial" font-weight="700" font-size="9" fill="#ffd968">2024</text>
+  </g>
+  <g transform="rotate(-4 120 150)">
+    <path d="M120 118 l9 18 20 3 -14.5 14 3.4 20 -17.9 -9.4 -17.9 9.4 3.4 -20 -14.5 -14 20 -3 Z" fill="#ffd968" stroke="#ffffff" stroke-width="3"/>
+  </g>
+</svg>

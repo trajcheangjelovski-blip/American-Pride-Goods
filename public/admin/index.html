@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — American Pride Store</title>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>" />
+  <style>
+    :root {
+      --navy-950: #060b1a; --navy-900: #0a1228; --navy-800: #111d3d;
+      --red-500: #e0162b; --red-400: #ff2d44; --gold-400: #f5c542; --gold-300: #ffd968;
+      --white: #fff; --grey-300: #b8c2d8; --grey-400: #8b96b0;
+      --green: #2ecc71; --radius: 14px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: var(--navy-950); color: var(--white); min-height: 100vh; }
+    button { font-family: inherit; cursor: pointer; }
+    input, select, textarea {
+      font-family: inherit; font-size: 0.92rem; color: var(--white);
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 10px; padding: 11px 14px; width: 100%; outline: none;
+      transition: border-color 0.2s ease;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--gold-400); }
+    select option { background: var(--navy-800); }
+    label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--grey-400); margin: 14px 0 6px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      border: none; border-radius: 999px; padding: 11px 22px;
+      font-weight: 800; font-size: 0.85rem; letter-spacing: 0.04em;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-red { background: linear-gradient(100deg, var(--red-500), #b00e20); color: #fff; box-shadow: 0 8px 26px -8px rgba(224,22,43,0.55); }
+    .btn-ghost { background: rgba(255,255,255,0.07); color: var(--white); border: 1px solid rgba(255,255,255,0.16); }
+    .btn-sm { padding: 7px 14px; font-size: 0.76rem; }
+    .btn-green { background: linear-gradient(100deg, #2ecc71, #1d9d54); color: #fff; }
+    .btn-danger { background: rgba(224,22,43,0.15); color: var(--red-400); border: 1px solid rgba(224,22,43,0.35); }
+
+    /* ---- login ---- */
+    .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 20px;
+      background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(30,63,160,0.25), transparent), var(--navy-950); }
+    .login-card {
+      width: 100%; max-width: 400px; padding: 44px 36px; border-radius: 22px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(12px); text-align: center;
+      animation: cardIn 0.6s cubic-bezier(0.22,1,0.36,1);
+    }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
+    .login-card h1 { font-family: 'Archivo Black'; font-size: 1.4rem; margin: 10px 0 4px; }
+    .login-card .sub { color: var(--grey-400); font-size: 0.88rem; margin-bottom: 24px; }
+    .login-card .star { font-size: 2.2rem; color: var(--gold-400); }
+    .err { color: var(--red-400); font-size: 0.84rem; min-height: 1.2em; margin-top: 12px; }
+
+    /* ---- layout ---- */
+    .layout { display: none; min-height: 100vh; }
+    .layout.on { display: flex; }
+    .sidebar {
+      width: 230px; flex-shrink: 0; background: var(--navy-900);
+      border-right: 1px solid rgba(255,255,255,0.07);
+      padding: 26px 16px; display: flex; flex-direction: column; gap: 4px;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .sidebar .brand { font-family: 'Archivo Black'; font-size: 0.95rem; padding: 0 12px 22px; }
+    .brand em { color: var(--red-400); font-style: normal; }
+    .brand .tag { display: block; font-family: 'Inter'; font-weight: 700; font-size: 0.65rem; letter-spacing: 0.2em; color: var(--gold-400); margin-top: 4px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+      border-radius: 12px; border: none; background: none; color: var(--grey-300);
+      font-weight: 600; font-size: 0.9rem; text-align: left; width: 100%;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.06); color: var(--white); }
+    .nav-item.active { background: linear-gradient(100deg, rgba(224,22,43,0.25), rgba(224,22,43,0.08)); color: var(--white); border-left: 3px solid var(--red-500); }
+    .nav-badge { margin-left: auto; background: var(--red-500); font-size: 0.68rem; font-weight: 800; border-radius: 999px; padding: 2px 8px; }
+    .sidebar .spacer { flex: 1; }
+
+    .main { flex: 1; padding: 34px 38px; min-width: 0; }
+    .page-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+    .page-head h2 { font-family: 'Archivo Black'; font-size: 1.5rem; }
+
+    /* ---- dashboard cards ---- */
+    .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 30px; }
+    .stat-card {
+      padding: 22px; border-radius: var(--radius);
+      background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.09);
+    }
+    .stat-card .k { color: var(--grey-400); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .stat-card .v { font-family: 'Archivo Black'; font-size: 1.7rem; margin-top: 8px; }
+    .stat-card .v.gold { color: var(--gold-300); }
+    .stat-card .v.green { color: var(--green); }
+
+    /* ---- tables ---- */
+    .panel { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); overflow: hidden; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.87rem; min-width: 640px; }
+    th { text-align: left; padding: 13px 16px; color: var(--grey-400); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+    td { padding: 13px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .thumb { width: 46px; height: 46px; border-radius: 10px; background: radial-gradient(ellipse, rgba(30,63,160,0.4), rgba(6,11,26,0.5)); display: grid; place-items: center; }
+    .thumb img { width: 80%; height: 80%; object-fit: contain; }
+    .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; }
+    .pill.on { background: rgba(46,204,113,0.15); color: var(--green); }
+    .pill.off { background: rgba(139,150,176,0.15); color: var(--grey-400); }
+    .pill.pending { background: rgba(245,197,66,0.15); color: var(--gold-300); }
+    .pill.suspended { background: rgba(224,22,43,0.15); color: var(--red-400); }
+    .pill.badge-red { background: rgba(224,22,43,0.2); color: var(--red-400); }
+    .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .muted { color: var(--grey-400); }
+    .empty { padding: 44px; text-align: center; color: var(--grey-400); }
+
+    /* toggle */
+    .toggle { position: relative; width: 42px; height: 24px; background: rgba(255,255,255,0.12); border-radius: 999px; border: none; transition: background 0.25s ease; flex-shrink: 0; }
+    .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--grey-300); transition: all 0.25s ease; }
+    .toggle.on { background: var(--green); }
+    .toggle.on::after { left: 21px; background: #fff; }
+    .toggle.star.on { background: var(--gold-400); }
+
+    /* ---- modal ---- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(3,6,15,0.75); backdrop-filter: blur(4px); display: none; place-items: center; z-index: 100; padding: 20px; overflow-y: auto; }
+    .modal-overlay.open { display: grid; }
+    .modal {
+      width: 100%; max-width: 620px; background: var(--navy-900);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 30px;
+      animation: cardIn 0.35s cubic-bezier(0.22,1,0.36,1); margin: auto;
+    }
+    .modal h3 { font-family: 'Archivo Black'; font-size: 1.15rem; margin-bottom: 6px; }
+    .modal .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 26px; }
+    .check-row { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+    .check-row label { margin: 0; text-transform: none; font-size: 0.88rem; color: var(--grey-300); }
+    .img-preview { margin-top: 10px; width: 90px; height: 90px; border-radius: 12px; background: rgba(255,255,255,0.05); display: grid; place-items: center; border: 1px dashed rgba(255,255,255,0.2); overflow: hidden; }
+    .img-preview img { width: 85%; height: 85%; object-fit: contain; }
+    .gal-list { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .gal-list:empty::after { content: 'No extra photos yet — choose files below to add some.'; color: var(--grey-400); font-size: 0.78rem; }
+    .gal-item { position: relative; width: 68px; height: 68px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14); display: grid; place-items: center; overflow: hidden; }
+    .gal-item img { width: 82%; height: 82%; object-fit: contain; }
+    .gal-rm { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 6px; border: none; background: rgba(224,22,43,0.85); color: #fff; font-size: 0.62rem; font-weight: 800; line-height: 1; }
+    .opt-group { border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px; margin-top: 10px; background: rgba(255,255,255,0.02); }
+    .opt-group-head { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .opt-group-head input { flex: 1; }
+    .opt-group-head select { width: auto; }
+    .opt-choice-row { display: flex; gap: 8px; align-items: center; margin-bottom: 7px; }
+    .opt-choice-row input.lbl { flex: 1; }
+    .opt-choice-row input.price { width: 120px; }
+    .opt-x { flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(224,22,43,0.35); background: rgba(224,22,43,0.12); color: var(--red-400); font-weight: 800; }
+    .opt-mini { font-size: 0.72rem; }
+    .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+    .media-item { border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; background: rgba(255,255,255,0.03); }
+    .media-thumb { aspect-ratio: 1; display: grid; place-items: center; background: radial-gradient(ellipse, rgba(30,63,160,0.3), rgba(6,11,26,0.4)); }
+    .media-thumb img { width: 82%; height: 82%; object-fit: contain; }
+    .media-foot { padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .media-tag { font-size: 0.66rem; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+    .media-tag.used { background: rgba(46,204,113,0.15); color: var(--green); }
+    .media-tag.unused { background: rgba(245,197,66,0.16); color: var(--gold-300); }
+    .media-tag.marketing { background: rgba(30,63,160,0.3); color: #7fa0ff; }
+    .daily-chart { display: flex; align-items: flex-end; gap: 10px; padding: 22px 20px; height: 200px; }
+    .day-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; }
+    .day-bar { width: 100%; max-width: 52px; border-radius: 8px 8px 0 0; background: linear-gradient(180deg, var(--red-400), #b00e20); min-height: 4px; transition: height 0.6s cubic-bezier(0.22,1,0.36,1); position: relative; }
+    .day-bar .n { position: absolute; top: -20px; left: 0; right: 0; text-align: center; font-size: 0.72rem; font-weight: 800; color: var(--gold-300); }
+    .day-label { font-size: 0.68rem; color: var(--grey-400); font-weight: 700; }
+    @media (max-width: 760px) { .traffic-cols { grid-template-columns: 1fr !important; } }
+    .msg-layout { display: grid; grid-template-columns: 300px 1fr; gap: 18px; }
+    .msg-threads { max-height: 560px; overflow-y: auto; }
+    .thread-item { width: 100%; text-align: left; border: none; background: none; color: var(--white); padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: background 0.2s; }
+    .thread-item:hover, .thread-item.active { background: rgba(255,255,255,0.05); }
+    .thread-item b { font-size: 0.9rem; }
+    .thread-item .preview { color: var(--grey-400); font-size: 0.78rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .thread-item .un { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--red-500); color: #fff; font-size: 0.66rem; font-weight: 800; float: right; }
+    .msg-conv { display: flex; flex-direction: column; min-height: 400px; }
+    .msg-conv-head { padding: 15px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); font-weight: 700; font-size: 0.92rem; }
+    .msg-thread { flex: 1; max-height: 460px; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+    .msg { max-width: 76%; padding: 10px 14px; border-radius: 14px; font-size: 0.88rem; line-height: 1.45; }
+    .msg .when { display: block; font-size: 0.66rem; color: var(--grey-400); margin-top: 4px; }
+    .msg.mine { align-self: flex-end; background: linear-gradient(100deg, var(--red-500), #b00e20); color: #fff; border-bottom-right-radius: 4px; }
+    .msg.mine .when { color: rgba(255,255,255,0.7); }
+    .msg.theirs { align-self: flex-start; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-bottom-left-radius: 4px; }
+    .msg-compose { display: flex; gap: 10px; padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .msg-compose input { flex: 1; }
+    @media (max-width: 760px) { .msg-layout { grid-template-columns: 1fr; } }
+    .payout-info-box { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: rgba(245,197,66,0.08); border: 1px solid rgba(245,197,66,0.25); font-size: 0.82rem; color: var(--gold-300); white-space: pre-wrap; line-height: 1.5; display: none; }
+    .payout-info-box.show { display: block; }
+    .payout-info-box b { color: #fff; }
+    .ok-msg { color: var(--green); font-size: 0.85rem; margin-top: 8px; min-height: 1em; }
+    .settings-status { padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 0.86rem; }
+    .settings-status.on { background: rgba(46,204,113,0.12); border: 1px solid rgba(46,204,113,0.3); color: var(--green); }
+    .settings-status.off { background: rgba(245,197,66,0.1); border: 1px solid rgba(245,197,66,0.3); color: var(--gold-300); }
+    .settings-status .badge-live { background: var(--red-500); color:#fff; padding:2px 8px; border-radius:999px; font-size:0.7rem; font-weight:800; }
+    .settings-status .badge-test { background: rgba(255,255,255,0.15); color:#fff; padding:2px 8px; border-radius:999px; font-size:0.7rem; font-weight:800; }
+
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(90px); background: linear-gradient(100deg, #2ecc71, #1d9d54); color: #fff; font-weight: 700; font-size: 0.9rem; padding: 13px 26px; border-radius: 999px; z-index: 300; transition: transform 0.35s cubic-bezier(0.22,1,0.36,1); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.error { background: linear-gradient(100deg, var(--red-500), #b00e20); }
+
+    .commission-input { width: 76px; padding: 7px 10px; text-align: center; }
+
+    @media (max-width: 860px) {
+      .layout.on { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 14px; }
+      .sidebar .brand { padding: 0 10px; }
+      .sidebar .brand .tag { display: none; }
+      .nav-item { width: auto; padding: 9px 13px; font-size: 0.82rem; }
+      .nav-item .ico { display: none; }
+      .sidebar .spacer { display: none; }
+      .main { padding: 20px 14px; }
+      .modal .row2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div class="login-wrap" id="login-view">
+    <form class="login-card" id="login-form">
+      <div class="star">★</div>
+      <h1>ADMIN <em style="color:var(--red-400);font-style:normal">PANEL</em></h1>
+      <p class="sub">American Pride Store management</p>
+      <input type="email" id="login-email" placeholder="Email" autocomplete="username" style="margin-bottom:10px" />
+      <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password" required />
+      <div class="err" id="login-err"></div>
+      <button class="btn btn-red" style="width:100%;justify-content:center;margin-top:8px" type="submit">SIGN IN</button>
+    </form>
+  </div>
+
+  <!-- APP -->
+  <div class="layout" id="app-view">
+    <aside class="sidebar">
+      <div class="brand">★ AMERICAN<em>PRIDE</em><span class="tag">ADMIN PANEL</span></div>
+      <button class="nav-item active" data-view="dashboard"><span class="ico">📊</span> Dashboard</button>
+      <button class="nav-item" data-view="products"><span class="ico">📦</span> Products</button>
+      <button class="nav-item" data-view="categories"><span class="ico">🗂️</span> Categories</button>
+      <button class="nav-item" data-view="media"><span class="ico">🖼️</span> Media</button>
+      <button class="nav-item" data-view="marketing"><span class="ico">📣</span> Marketing</button>
+      <button class="nav-item" data-view="traffic"><span class="ico">📈</span> Traffic</button>
+      <button class="nav-item" data-view="affiliates"><span class="ico">🤝</span> Affiliates <span class="nav-badge" id="aff-badge" style="display:none"></span></button>
+      <button class="nav-item" data-view="messages"><span class="ico">💬</span> Messages <span class="nav-badge" id="msg-nav-badge" style="display:none"></span></button>
+      <button class="nav-item" data-view="payouts"><span class="ico">💵</span> Payouts</button>
+      <button class="nav-item" data-view="requests"><span class="ico">📥</span> Requests <span class="nav-badge" id="req-nav-badge" style="display:none"></span></button>
+      <button class="nav-item" data-view="settings"><span class="ico">⚙️</span> Settings</button>
+      <button class="nav-item" data-view="orders"><span class="ico">🧾</span> Orders</button>
+      <div class="spacer"></div>
+      <button class="nav-item" onclick="location.href='/'"><span class="ico">🏪</span> View store</button>
+      <button class="nav-item" id="logout-btn"><span class="ico">🚪</span> Log out</button>
+    </aside>
+
+    <main class="main">
+      <!-- DASHBOARD -->
+      <section id="view-dashboard">
+        <div class="page-head"><h2>Dashboard</h2></div>
+        <div class="stat-cards" id="dash-cards"></div>
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Affiliate</th><th>Commission</th><th>Date</th></tr></thead>
+              <tbody id="dash-orders"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRODUCTS -->
+      <section id="view-products" style="display:none">
+        <div class="page-head">
+          <h2>Products</h2>
+          <button class="btn btn-red" onclick="openProductModal()">+ Add product</button>
+        </div>
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th></th><th>Product</th><th>Category</th><th>Price</th><th>Badge</th><th>Featured</th><th>Visible</th><th></th></tr></thead>
+              <tbody id="products-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- CATEGORIES -->
+      <section id="view-categories" style="display:none">
+        <div class="page-head">
+          <h2>Categories</h2>
+          <button class="btn btn-red" onclick="addCategory()">+ Add category</button>
+        </div>
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>Slug</th><th>Products</th><th></th></tr></thead>
+              <tbody id="categories-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRAFFIC -->
+      <section id="view-traffic" style="display:none">
+        <div class="page-head"><h2>Traffic &amp; clicks</h2></div>
+        <div class="stat-cards" id="traffic-cards"></div>
+        <div class="panel" style="margin-bottom:22px">
+          <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">Views — last 7 days</h3>
+          <div class="daily-chart" id="daily-chart"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="traffic-cols">
+          <div class="panel">
+            <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">Most-viewed pages</h3>
+            <div class="table-scroll"><table><thead><tr><th>Page</th><th>Views</th></tr></thead><tbody id="top-pages"></tbody></table></div>
+          </div>
+          <div class="panel">
+            <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">Clicks by affiliate link</h3>
+            <div class="table-scroll"><table><thead><tr><th>Affiliate</th><th>Code</th><th>Views</th></tr></thead><tbody id="aff-traffic"></tbody></table></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:20px">
+          <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">Affiliate clicks by product <span class="muted" style="font-weight:400;font-size:0.8rem">— which affiliate got clicks on which product</span></h3>
+          <div class="table-scroll"><table><thead><tr><th>Affiliate</th><th>Product</th><th>Clicks</th></tr></thead><tbody id="aff-product-traffic"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- MEDIA -->
+      <section id="view-media" style="display:none">
+        <div class="page-head">
+          <h2>Media library</h2>
+          <button class="btn btn-danger" id="prune-btn">🧹 Delete all unused</button>
+        </div>
+        <p class="muted" style="font-size:0.85rem;margin:-14px 0 22px">Photos you uploaded through the product form. Ones not attached to any product are marked <b style="color:var(--gold-300)">UNUSED</b> and can be safely deleted.</p>
+        <div class="media-grid" id="media-grid"></div>
+      </section>
+
+      <!-- MARKETING -->
+      <section id="view-marketing" style="display:none">
+        <div class="page-head">
+          <h2>Marketing materials</h2>
+          <button class="btn btn-red" onclick="openAssetModal()">+ Add poster / image</button>
+        </div>
+        <p class="muted" style="font-size:0.85rem;margin:-14px 0 22px">Posters and product images your affiliates can download and copy to promote the store.</p>
+        <div class="media-grid" id="assets-grid"></div>
+      </section>
+
+      <!-- AFFILIATES -->
+      <section id="view-affiliates" style="display:none">
+        <div class="page-head">
+          <h2>Affiliates</h2>
+          <button class="btn btn-red" onclick="openAffiliateModal()">+ Add affiliate</button>
+        </div>
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Affiliate</th><th>Code</th><th>Status</th><th>Commission %</th><th>Clicks</th><th>Orders</th><th>Conv.</th><th>Sales</th><th>Earned</th><th>Owed</th><th></th></tr></thead>
+              <tbody id="affiliates-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ORDERS -->
+      <section id="view-orders" style="display:none">
+        <div class="page-head"><h2>Orders</h2></div>
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Profit</th><th>Affiliate</th><th>Commission</th><th>Date</th></tr></thead>
+              <tbody id="orders-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- MESSAGES -->
+      <section id="view-messages" style="display:none">
+        <div class="page-head"><h2>Messages</h2></div>
+        <div class="msg-layout">
+          <div class="panel msg-threads" id="msg-threads"></div>
+          <div class="panel msg-conv">
+            <div class="msg-conv-head" id="msg-conv-head">Select a conversation</div>
+            <div class="msg-thread" id="admin-msg-thread"><p class="empty">Pick an affiliate on the left to see the conversation.</p></div>
+            <form class="msg-compose" id="admin-msg-form" style="display:none">
+              <input id="admin-msg-input" placeholder="Write a reply…" maxlength="2000" autocomplete="off" />
+              <button class="btn btn-red" type="submit" style="padding:11px 20px">Send</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAYOUTS -->
+      <section id="view-payouts" style="display:none">
+        <div class="page-head">
+          <h2>Payouts</h2>
+          <button class="btn btn-red" onclick="openPayoutModal()">+ New payout</button>
+        </div>
+        <div class="stat-cards" id="payout-cards"></div>
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Affiliate</th><th>Amount</th><th>Method</th><th>Note</th><th>Status</th><th>Date</th><th></th></tr></thead>
+              <tbody id="payouts-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- REQUESTS -->
+      <section id="view-requests" style="display:none">
+        <div class="page-head"><h2>Affiliate applications</h2></div>
+        <p class="muted" style="font-size:0.85rem;margin:-14px 0 22px">Messages sent from the "Apply" form on the affiliate page. Approve someone by creating them an account in <b>Affiliates</b>.</p>
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Message</th><th>Date</th><th></th></tr></thead>
+              <tbody id="requests-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="view-settings" style="display:none">
+        <div class="page-head"><h2>Settings</h2></div>
+
+        <div class="panel" style="max-width:640px">
+          <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">💳 Stripe payments</h3>
+          <div style="padding:20px">
+            <div id="stripe-status" class="settings-status"></div>
+            <label>Stripe secret key</label>
+            <input type="password" id="set-stripe-key" placeholder="sk_test_… or sk_live_…" autocomplete="off" />
+            <p class="muted" style="font-size:0.78rem;margin-top:6px">Get it from <a href="https://dashboard.stripe.com/apikeys" target="_blank" style="color:var(--gold-300)">dashboard.stripe.com/apikeys</a>. Use a <b>test</b> key (sk_test_…) first. The key is verified with Stripe before saving. Leave blank &amp; save to clear it.</p>
+            <div class="err" id="set-stripe-err"></div>
+            <div class="ok-msg" id="set-stripe-ok"></div>
+            <button class="btn btn-red" id="save-stripe-btn" style="margin-top:12px">Save &amp; verify key</button>
+          </div>
+        </div>
+
+        <div class="panel" style="max-width:640px">
+          <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">🌐 Site URL</h3>
+          <div style="padding:20px">
+            <label>Public site address</label>
+            <input id="set-domain" placeholder="https://www.yourstore.com" autocomplete="off" />
+            <p class="muted" style="font-size:0.78rem;margin-top:6px">Where Stripe sends customers back after paying, and the base for affiliate links. Leave blank for local testing (currently: <b id="set-eff-domain"></b>).</p>
+            <div class="err" id="set-domain-err"></div>
+            <div class="ok-msg" id="set-domain-ok"></div>
+            <button class="btn btn-red" id="save-domain-btn" style="margin-top:12px">Save site URL</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- PRODUCT MODAL -->
+  <div class="modal-overlay" id="product-modal">
+    <form class="modal" id="product-form">
+      <h3 id="product-modal-title">Add product</h3>
+      <p class="muted" style="font-size:0.85rem">Products marked "Visible" appear in the store. "Featured" pins them to the top of the homepage.</p>
+      <input type="hidden" id="pf-slug" />
+      <div class="row2">
+        <div><label>Name *</label><input id="pf-name" required maxlength="120" /></div>
+        <div><label>Price (USD) *</label><input id="pf-price" type="number" step="0.01" min="0.5" required /></div>
+      </div>
+      <div class="row2">
+        <div><label>Sale price (USD) <span class="muted" style="text-transform:none">— optional discount</span></label><input id="pf-sale" type="number" step="0.01" min="0" placeholder="leave empty for no discount" /></div>
+        <div><label>Cost / buying price (USD) <span class="muted" style="text-transform:none">— private</span></label><input id="pf-cost" type="number" step="0.01" min="0" placeholder="what you pay (e.g. AliExpress)" /></div>
+      </div>
+      <p class="muted" style="font-size:0.78rem;margin:-4px 0 0">💡 Cost is never shown to customers. Affiliate commission is paid on the profit (sale price − cost).</p>
+      <div class="row2">
+        <div><label>Category</label><select id="pf-category"></select></div>
+        <div><label>Badge</label>
+          <select id="pf-badge">
+            <option value="">— none —</option>
+            <option>NEW</option><option>HOT</option><option>BEST SELLER</option><option>LIMITED</option><option>SALE</option>
+          </select>
+        </div>
+      </div>
+      <label>Short description</label>
+      <input id="pf-desc" maxlength="400" placeholder="One catchy sentence shown on the product card" />
+      <label>Full description (product page)</label>
+      <textarea id="pf-long" rows="4" placeholder="Longer story — separate paragraphs with a blank line"></textarea>
+      <label>Main image</label>
+      <input type="file" id="pf-file" accept="image/png,image/jpeg,image/webp" style="padding:8px" />
+      <input id="pf-image" placeholder="…or paste an image path/URL, e.g. /images/hat.svg" style="margin-top:8px" />
+      <div class="img-preview" id="pf-preview"><span class="muted" style="font-size:0.7rem">preview</span></div>
+      <label>More photos (shown as a gallery on the product page)</label>
+      <div class="gal-list" id="pf-gallery"></div>
+      <input type="file" id="pf-gallery-file" accept="image/png,image/jpeg,image/webp" multiple style="padding:8px" />
+
+      <label style="margin-top:22px">Options &amp; add-ons <span class="muted" style="text-transform:none">— sizes, colors, extras (each choice can add to the price)</span></label>
+      <div id="pf-options"></div>
+      <button type="button" class="btn btn-ghost btn-sm" id="pf-add-group" style="margin-top:10px">+ Add option group</button>
+
+      <div class="check-row" style="margin-top:22px"><button type="button" class="toggle star" id="pf-featured"></button><label>Featured on homepage</label></div>
+      <div class="check-row"><button type="button" class="toggle on" id="pf-active"></button><label>Visible in store</label></div>
+      <div class="err" id="pf-err"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeProductModal()">Cancel</button>
+        <button type="submit" class="btn btn-red" id="pf-save">Save product</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- AFFILIATE MODAL -->
+  <div class="modal-overlay" id="affiliate-modal">
+    <form class="modal" id="affiliate-form" style="max-width:480px">
+      <h3>Create affiliate account</h3>
+      <p class="muted" style="font-size:0.85rem">Set up a seller yourself and share their login. They earn their % of the profit on every sale from their link.</p>
+      <div class="row2">
+        <div><label>Full name *</label><input id="af-name" required maxlength="80" /></div>
+        <div><label>Commission % (of profit) *</label><input id="af-pct" type="number" min="0" max="90" step="0.5" value="10" required /></div>
+      </div>
+      <label>Email *</label>
+      <input id="af-email" type="email" required maxlength="120" />
+      <label>Password *</label>
+      <input id="af-pass" type="text" required minlength="6" placeholder="at least 6 characters — share this with them" />
+      <div class="check-row"><button type="button" class="toggle on" id="af-approved"></button><label>Approved (commissions active immediately)</label></div>
+      <div class="err" id="af-err"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeAffiliateModal()">Cancel</button>
+        <button type="submit" class="btn btn-red">Create affiliate</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- PAYOUT MODAL -->
+  <div class="modal-overlay" id="payout-modal">
+    <form class="modal" id="payout-form" style="max-width:480px">
+      <h3>Record a payout</h3>
+      <p class="muted" style="font-size:0.85rem">Log a payment to an affiliate. Mark it paid now, or leave it pending until you've sent the money.</p>
+      <label>Affiliate *</label>
+      <select id="po-affiliate" required></select>
+      <div class="payout-info-box" id="po-info"></div>
+      <div class="row2">
+        <div><label>Amount (USD) *</label><input id="po-amount" type="number" step="0.01" min="0.5" required /></div>
+        <div><label>Method</label>
+          <select id="po-method"><option value="">—</option><option>Wise</option><option>Payoneer</option><option>Bank transfer</option><option>PayPal</option><option>Other</option></select>
+        </div>
+      </div>
+      <label>Note (optional)</label>
+      <input id="po-note" maxlength="300" placeholder="e.g. October commissions" />
+      <div class="check-row"><button type="button" class="toggle" id="po-paid"></button><label>Already paid</label></div>
+      <div class="err" id="po-err"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closePayoutModal()">Cancel</button>
+        <button type="submit" class="btn btn-red">Save payout</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- MARKETING ASSET MODAL -->
+  <div class="modal-overlay" id="asset-modal">
+    <form class="modal" id="asset-form" style="max-width:480px">
+      <h3>Add marketing material</h3>
+      <label>Title</label>
+      <input id="as-title" maxlength="120" placeholder="e.g. Summer sale poster" />
+      <label>Description</label>
+      <textarea id="as-desc" rows="3" maxlength="1000" placeholder="Caption, suggested text, or how to use this — shown to affiliates"></textarea>
+      <label>Related product (optional)</label>
+      <select id="as-product"><option value="">— general / all products —</option></select>
+      <label>Image *</label>
+      <input type="file" id="as-file" accept="image/png,image/jpeg,image/webp" style="padding:8px" />
+      <div class="img-preview" id="as-preview"><span class="muted" style="font-size:0.7rem">preview</span></div>
+      <input type="hidden" id="as-path" />
+      <div class="err" id="as-err"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeAssetModal()">Cancel</button>
+        <button type="submit" class="btn btn-red">Save</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- PAYOUT INFO MODAL -->
+  <div class="modal-overlay" id="info-modal">
+    <div class="modal" style="max-width:460px">
+      <h3 id="info-title">Payout details</h3>
+      <div class="payout-info-box show" id="info-body" style="margin-top:14px"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('info-modal').classList.remove('open')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const fmt = (c) => '$' + ((c || 0) / 100).toFixed(2);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+
+    let CATS = [];
+    let PRODUCTS = [];
+
+    async function api(path, method = 'GET', body) {
+      const res = await fetch('/api/admin/' + path, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401 && path !== 'login') { showLogin(); throw new Error('Session expired — log in again'); }
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    }
+
+    let toastTimer;
+    function toast(msg, isError) {
+      const t = $('#toast');
+      t.textContent = msg;
+      t.classList.toggle('error', !!isError);
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    /* ---------- auth ---------- */
+    function showLogin() { $('#login-view').style.display = ''; $('#app-view').classList.remove('on'); }
+    function showApp() { $('#login-view').style.display = 'none'; $('#app-view').classList.add('on'); loadAll(); }
+
+    $('#login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('#login-err').textContent = '';
+      try {
+        await api('login', 'POST', { email: $('#login-email').value, password: $('#login-pass').value });
+        $('#login-pass').value = '';
+        showApp();
+      } catch (err) { $('#login-err').textContent = err.message; }
+    });
+
+    $('#logout-btn').addEventListener('click', async () => { await api('logout', 'POST', {}); showLogin(); });
+
+    /* ---------- navigation ---------- */
+    document.querySelectorAll('.nav-item[data-view]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item[data-view]').forEach((b) => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('main > section').forEach((s) => { s.style.display = 'none'; });
+        $('#view-' + btn.dataset.view).style.display = '';
+      });
+    });
+
+    async function loadAll() {
+      try {
+        await Promise.all([loadDashboard(), loadCategories(), loadProducts(), loadMedia(), loadTraffic(), loadAffiliates(), loadOrders(), loadThreads(), loadPayouts(), loadRequests(), loadMarketing(), loadSettings()]);
+      } catch (err) { toast(err.message, true); }
+    }
+
+    /* ---------- dashboard ---------- */
+    async function loadDashboard() {
+      const s = await api('summary');
+      $('#dash-cards').innerHTML = `
+        <div class="stat-card"><div class="k">Revenue</div><div class="v gold">${fmt(s.revenue)}</div></div>
+        <div class="stat-card"><div class="k">Page visits</div><div class="v">${(s.views || 0).toLocaleString('en-US')}</div></div>
+        <div class="stat-card"><div class="k">Orders</div><div class="v">${s.orders}</div></div>
+        <div class="stat-card"><div class="k">Profit</div><div class="v gold">${fmt(s.profit || 0)}</div></div>
+        <div class="stat-card"><div class="k">Products</div><div class="v">${s.products}</div></div>
+        <div class="stat-card"><div class="k">Affiliates</div><div class="v">${s.affiliates}</div></div>
+        <div class="stat-card"><div class="k">Commissions owed</div><div class="v green">${fmt(s.commissions)}</div></div>`;
+      const badge = $('#aff-badge');
+      badge.style.display = s.pending_affiliates ? '' : 'none';
+      badge.textContent = s.pending_affiliates;
+      const mb = $('#msg-nav-badge');
+      if (s.unread_messages > 0) { mb.textContent = s.unread_messages; mb.style.display = ''; }
+      else mb.style.display = 'none';
+      const rb = $('#req-nav-badge');
+      if (s.new_requests > 0) { rb.textContent = s.new_requests; rb.style.display = ''; }
+      else rb.style.display = 'none';
+      $('#dash-orders').innerHTML = s.recent_orders.length
+        ? s.recent_orders.map((o) => `
+          <tr><td>#${o.id}</td><td>${esc(o.customer_email) || '<span class="muted">—</span>'}</td>
+          <td><b>${fmt(o.amount_total)}</b></td>
+          <td>${esc(o.affiliate_name) || '<span class="muted">direct</span>'}</td>
+          <td>${o.commission ? fmt(o.commission) : '<span class="muted">—</span>'}</td>
+          <td class="muted">${o.created_at.slice(0, 16)}</td></tr>`).join('')
+        : '<tr><td colspan="6" class="empty">No orders yet — they appear here after the first Stripe payment.</td></tr>';
+    }
+
+    /* ---------- categories ---------- */
+    async function loadCategories() {
+      CATS = await api('categories');
+      $('#categories-body').innerHTML = CATS.length
+        ? CATS.map((c) => `
+          <tr><td><b>${esc(c.name)}</b></td><td class="muted">${esc(c.slug)}</td><td>${c.product_count}</td>
+          <td><div class="row-actions">
+            <button class="btn btn-ghost btn-sm" onclick="renameCategory(${c.id}, '${esc(c.name).replace(/'/g, "\\'")}')">Rename</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCategory(${c.id}, ${c.product_count})">Delete</button>
+          </div></td></tr>`).join('')
+        : '<tr><td colspan="4" class="empty">No categories yet.</td></tr>';
+      const sel = $('#pf-category');
+      sel.innerHTML = '<option value="">— no category —</option>' + CATS.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    }
+
+    async function addCategory() {
+      const name = prompt('New category name:');
+      if (!name || !name.trim()) return;
+      try { await api('categories', 'POST', { name }); toast('Category added ✓'); loadCategories(); }
+      catch (err) { toast(err.message, true); }
+    }
+    async function renameCategory(id, current) {
+      const name = prompt('Rename category:', current);
+      if (!name || !name.trim() || name === current) return;
+      try { await api('categories/' + id, 'PUT', { name }); toast('Category renamed ✓'); loadCategories(); loadProducts(); }
+      catch (err) { toast(err.message, true); }
+    }
+    async function deleteCategory(id, count) {
+      if (!confirm(count ? `This category has ${count} product(s). They will become uncategorised. Delete?` : 'Delete this category?')) return;
+      try { await api('categories/' + id, 'DELETE'); toast('Category deleted'); loadCategories(); loadProducts(); }
+      catch (err) { toast(err.message, true); }
+    }
+
+    /* ---------- products ---------- */
+    async function loadProducts() {
+      PRODUCTS = await api('products');
+      $('#products-body').innerHTML = PRODUCTS.length
+        ? PRODUCTS.map((p) => `
+          <tr>
+            <td><div class="thumb"><img src="${esc(p.image)}" alt="" onerror="this.style.display='none'"/></div></td>
+            <td><b>${esc(p.name)}</b><br/><span class="muted" style="font-size:0.78rem">/product/${esc(p.slug)}</span></td>
+            <td>${esc(p.category_name) || '<span class="muted">—</span>'}</td>
+            <td>${p.sale_price ? `<b style="color:var(--gold-300)">${fmt(p.sale_price)}</b> <span class="muted" style="text-decoration:line-through;font-size:0.78rem">${fmt(p.price)}</span>` : `<b>${fmt(p.price)}</b>`}${p.cost ? `<br/><span class="muted" style="font-size:0.72rem">cost ${fmt(p.cost)}</span>` : ''}</td>
+            <td>${p.badge ? `<span class="pill badge-red">${esc(p.badge)}</span>` : '<span class="muted">—</span>'}${(() => { try { return JSON.parse(p.options || '[]').length ? ' <span class="pill" style="background:rgba(46,204,113,0.15);color:var(--green)">OPTIONS</span>' : ''; } catch { return ''; } })()}</td>
+            <td><button class="toggle star ${p.featured ? 'on' : ''}" onclick="quickToggle('${esc(p.slug)}', 'featured', this)"></button></td>
+            <td><button class="toggle ${p.active ? 'on' : ''}" onclick="quickToggle('${esc(p.slug)}', 'active', this)"></button></td>
+            <td><div class="row-actions">
+              <button class="btn btn-ghost btn-sm" onclick="openProductModal('${esc(p.slug)}')">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteProduct('${esc(p.slug)}')">Delete</button>
+            </div></td>
+          </tr>`).join('')
+        : '<tr><td colspan="8" class="empty">No products yet — click "+ Add product".</td></tr>';
+    }
+
+    async function quickToggle(slug, field, el) {
+      const p = PRODUCTS.find((x) => x.slug === slug);
+      if (!p) return;
+      const updated = { ...p, price: p.price, [field]: p[field] ? 0 : 1 };
+      try {
+        await api('products/' + slug, 'PUT', updated);
+        p[field] = updated[field];
+        el.classList.toggle('on', !!updated[field]);
+      } catch (err) { toast(err.message, true); }
+    }
+
+    async function deleteProduct(slug) {
+      if (!confirm('Delete this product permanently?')) return;
+      try { await api('products/' + slug, 'DELETE'); toast('Product deleted'); loadProducts(); loadDashboard(); }
+      catch (err) { toast(err.message, true); }
+    }
+
+    /* ---------- media library ---------- */
+    async function loadMedia() {
+      const list = await api('media');
+      const grid = $('#media-grid');
+      if (!list.length) {
+        grid.innerHTML = '<p class="empty">No uploaded photos yet. Upload some via a product\'s image fields.</p>';
+        return;
+      }
+      grid.innerHTML = list.map((m) => {
+        const tag = m.usage === 'product' ? '<span class="media-tag used">PRODUCT</span>'
+          : m.usage === 'marketing' ? '<span class="media-tag marketing">MARKETING</span>'
+          : '<span class="media-tag unused">UNUSED</span>';
+        // Product images are protected; marketing + unused can be deleted.
+        const del = m.usage === 'product' ? ''
+          : `<button class="btn btn-danger btn-sm" onclick="deleteMedia('${esc(m.file)}', '${m.usage}')">Delete</button>`;
+        return `
+        <div class="media-item">
+          <div class="media-thumb"><img src="${esc(m.path)}" alt="" /></div>
+          <div class="media-foot">${tag}${del}</div>
+        </div>`;
+      }).join('');
+    }
+    async function deleteMedia(file, usage) {
+      const msg = usage === 'marketing'
+        ? 'This photo is used by a marketing card. Deleting it will also remove that marketing card. Continue?'
+        : 'Delete this photo file permanently?';
+      if (!confirm(msg)) return;
+      try { await api('media/delete', 'POST', { file }); toast('Photo deleted'); loadMedia(); loadMarketing(); }
+      catch (err) { toast(err.message, true); }
+    }
+    $('#prune-btn').addEventListener('click', async () => {
+      if (!confirm('Delete ALL unused photos? This cannot be undone.')) return;
+      try { const r = await api('media/prune', 'POST', {}); toast(`Deleted ${r.deleted} unused photo(s) 🧹`); loadMedia(); }
+      catch (err) { toast(err.message, true); }
+    });
+
+    /* ---------- traffic / analytics ---------- */
+    async function loadTraffic() {
+      const t = await api('traffic');
+      $('#traffic-cards').innerHTML = `
+        <div class="stat-card"><div class="k">Total views</div><div class="v">${t.total.toLocaleString('en-US')}</div></div>
+        <div class="stat-card"><div class="k">Views today</div><div class="v gold">${t.today.toLocaleString('en-US')}</div></div>
+        <div class="stat-card"><div class="k">Last 7 days</div><div class="v">${t.week.toLocaleString('en-US')}</div></div>
+        <div class="stat-card"><div class="k">Via affiliate links</div><div class="v green">${t.via_affiliate.toLocaleString('en-US')}</div></div>
+        <div class="stat-card"><div class="k">Conversion (views → orders)</div><div class="v gold">${t.conversion}%</div><div class="muted" style="font-size:0.72rem;margin-top:4px">${t.orders} order(s) from ${t.total.toLocaleString('en-US')} views</div></div>`;
+
+      // Build a 7-day chart, filling any days with no views.
+      const byDay = {};
+      t.daily.forEach((d) => { byDay[d.day] = d.views; });
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        days.push({ key, label: d.toLocaleDateString('en-US', { weekday: 'short' }), views: byDay[key] || 0 });
+      }
+      const max = Math.max(1, ...days.map((d) => d.views));
+      $('#daily-chart').innerHTML = days.map((d) => `
+        <div class="day-col">
+          <div class="day-bar" style="height:${Math.round((d.views / max) * 100)}%"><span class="n">${d.views || ''}</span></div>
+          <div class="day-label">${d.label}</div>
+        </div>`).join('');
+
+      $('#top-pages').innerHTML = t.top_pages.length
+        ? t.top_pages.map((p) => {
+            const label = p.product_name ? esc(p.product_name) : (p.path === '/' ? 'Home page' : esc(p.path));
+            return `<tr><td>${label}<br/><span class="muted" style="font-size:0.72rem">${esc(p.path)}</span></td><td><b>${p.views.toLocaleString('en-US')}</b></td></tr>`;
+          }).join('')
+        : '<tr><td colspan="2" class="empty">No page views recorded yet.</td></tr>';
+
+      $('#aff-traffic').innerHTML = t.by_affiliate.length
+        ? t.by_affiliate.map((a) => `<tr><td>${esc(a.name)}</td><td><code style="color:var(--gold-300)">${esc(a.code)}</code></td><td><b>${a.views.toLocaleString('en-US')}</b></td></tr>`).join('')
+        : '<tr><td colspan="3" class="empty">No affiliate-referred visits yet.</td></tr>';
+
+      $('#aff-product-traffic').innerHTML = (t.affiliate_products && t.affiliate_products.length)
+        ? t.affiliate_products.map((a) => {
+            const prod = a.product_name ? esc(a.product_name) : esc(a.path);
+            return `<tr><td>${esc(a.affiliate_name)} <span class="muted">(${esc(a.code)})</span></td><td>${prod}</td><td><b>${a.views.toLocaleString('en-US')}</b></td></tr>`;
+          }).join('')
+        : '<tr><td colspan="3" class="empty">No affiliate clicks on product pages yet.</td></tr>';
+    }
+
+    /* ---------- messaging ---------- */
+    let currentThread = null;
+    async function loadThreads() {
+      const threads = await api('messages');
+      $('#msg-threads').innerHTML = threads.length
+        ? threads.map((t) => `
+          <button class="thread-item ${currentThread === t.affiliate_id ? 'active' : ''}" onclick="openThread(${t.affiliate_id}, '${esc(t.name).replace(/'/g, "\\'")}')">
+            ${t.unread ? `<span class="un">${t.unread}</span>` : ''}
+            <b>${esc(t.name)}</b>
+            <div class="preview">${esc(t.last_body || '')}</div>
+          </button>`).join('')
+        : '<p class="empty">No messages from affiliates yet.</p>';
+    }
+    async function openThread(id, name) {
+      currentThread = id;
+      $('#msg-conv-head').textContent = 'Conversation with ' + name;
+      $('#admin-msg-form').style.display = '';
+      const list = await api('messages/' + id);
+      const box = $('#admin-msg-thread');
+      box.innerHTML = list.length
+        ? list.map((m) => `<div class="msg ${m.sender === 'admin' ? 'mine' : 'theirs'}">${esc(m.body)}<span class="when">${m.sender === 'admin' ? 'You' : name} · ${m.created_at.slice(0, 16)}</span></div>`).join('')
+        : '<p class="empty">No messages yet.</p>';
+      box.scrollTop = box.scrollHeight;
+      document.querySelectorAll('.thread-item').forEach((b) => b.classList.toggle('active', b.textContent.includes(name)));
+      loadThreads(); loadDashboard(); // refresh unread badges after marking read
+    }
+    $('#admin-msg-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentThread) return;
+      const input = $('#admin-msg-input');
+      const body = input.value.trim();
+      if (!body) return;
+      input.value = '';
+      try {
+        await api('messages/' + currentThread, 'POST', { body });
+        const name = $('#msg-conv-head').textContent.replace('Conversation with ', '');
+        openThread(currentThread, name);
+      } catch (err) { toast(err.message, true); input.value = body; }
+    });
+
+    /* ---------- payouts ---------- */
+    async function loadPayouts() {
+      const list = await api('payouts');
+      const paid = list.filter((p) => p.status === 'paid').reduce((s, p) => s + p.amount, 0);
+      const pending = list.filter((p) => p.status === 'pending').reduce((s, p) => s + p.amount, 0);
+      $('#payout-cards').innerHTML = `
+        <div class="stat-card"><div class="k">Total paid out</div><div class="v green">${fmt(paid)}</div></div>
+        <div class="stat-card"><div class="k">Pending payouts</div><div class="v gold">${fmt(pending)}</div></div>
+        <div class="stat-card"><div class="k">Payouts logged</div><div class="v">${list.length}</div></div>`;
+      $('#payouts-body').innerHTML = list.length
+        ? list.map((p) => `
+          <tr>
+            <td>${esc(p.affiliate_name) || '<span class="muted">(deleted)</span>'} <span class="muted">${p.affiliate_code ? '(' + esc(p.affiliate_code) + ')' : ''}</span></td>
+            <td><b>${fmt(p.amount)}</b></td>
+            <td>${esc(p.method) || '<span class="muted">—</span>'}</td>
+            <td class="muted">${esc(p.note) || '—'}</td>
+            <td><span class="pill ${p.status === 'paid' ? 'on' : 'pending'}">${p.status.toUpperCase()}</span></td>
+            <td class="muted">${(p.status === 'paid' && p.paid_at ? p.paid_at : p.created_at).slice(0, 16)}</td>
+            <td><div class="row-actions">
+              <button class="btn ${p.status === 'paid' ? 'btn-ghost' : 'btn-green'} btn-sm" onclick="togglePayout(${p.id}, '${p.status === 'paid' ? 'pending' : 'paid'}')">${p.status === 'paid' ? 'Mark unpaid' : 'Mark paid'}</button>
+              <button class="btn btn-danger btn-sm" onclick="deletePayout(${p.id})">✕</button>
+            </div></td>
+          </tr>`).join('')
+        : '<tr><td colspan="7" class="empty">No payouts yet. Click "+ New payout" to record one.</td></tr>';
+    }
+    function openPayoutModal(affiliateId) {
+      const sel = $('#po-affiliate');
+      sel.innerHTML = AFFILIATES.map((a) => {
+        const owed = a.earned - (a.paid_out || 0);
+        return `<option value="${a.id}">${esc(a.name)} (${esc(a.code)})${owed > 0 ? ' — owed ' + fmt(owed) : ''}</option>`;
+      }).join('');
+      if (affiliateId) sel.value = affiliateId;
+      $('#po-amount').value = ''; $('#po-method').value = ''; $('#po-note').value = '';
+      $('#po-paid').classList.remove('on'); $('#po-err').textContent = '';
+      showPayoutInfo();
+      $('#payout-modal').classList.add('open');
+    }
+    function closePayoutModal() { $('#payout-modal').classList.remove('open'); }
+    $('#payout-modal').addEventListener('click', (e) => { if (e.target === $('#payout-modal')) closePayoutModal(); });
+    $('#po-paid').addEventListener('click', () => $('#po-paid').classList.toggle('on'));
+    $('#po-affiliate').addEventListener('change', showPayoutInfo);
+    function showPayoutInfo() {
+      const a = AFFILIATES.find((x) => x.id == $('#po-affiliate').value);
+      const box = $('#po-info');
+      let info = null;
+      try { info = a && a.payout_info ? JSON.parse(a.payout_info) : null; } catch {}
+      if (info && (info.method || info.details)) {
+        box.innerHTML = `<b>Their payout details</b>\n${esc(info.method || '')}${info.details ? '\n' + esc(info.details) : ''}`;
+        box.classList.add('show');
+      } else {
+        box.innerHTML = '<b>No payout details on file.</b> Ask them to add it in their portal.';
+        box.classList.add('show');
+      }
+    }
+    $('#payout-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = {
+        affiliate_id: Number($('#po-affiliate').value),
+        amount: Math.round(parseFloat($('#po-amount').value || '0') * 100),
+        method: $('#po-method').value,
+        note: $('#po-note').value,
+        status: $('#po-paid').classList.contains('on') ? 'paid' : 'pending'
+      };
+      try { await api('payouts', 'POST', body); closePayoutModal(); toast('Payout saved ✓'); loadPayouts(); loadAffiliates(); }
+      catch (err) { $('#po-err').textContent = err.message; }
+    });
+    async function togglePayout(id, status) {
+      try { await api('payouts/' + id, 'PUT', { status }); toast('Payout updated ✓'); loadPayouts(); loadAffiliates(); }
+      catch (err) { toast(err.message, true); }
+    }
+    async function deletePayout(id) {
+      if (!confirm('Delete this payout record?')) return;
+      try { await api('payouts/' + id, 'DELETE'); toast('Payout deleted'); loadPayouts(); loadAffiliates(); }
+      catch (err) { toast(err.message, true); }
+    }
+
+    /* ---------- affiliate applications ---------- */
+    async function loadRequests() {
+      const list = await api('contact-requests');
+      $('#requests-body').innerHTML = list.length
+        ? list.map((r) => `
+          <tr style="${r.handled ? 'opacity:0.55' : ''}">
+            <td><b>${esc(r.name)}</b></td>
+            <td><a href="mailto:${esc(r.email)}">${esc(r.email)}</a></td>
+            <td class="muted" style="max-width:320px">${esc(r.body)}</td>
+            <td class="muted">${r.created_at.slice(0, 16)}</td>
+            <td><div class="row-actions">
+              ${r.handled ? '' : `<button class="btn btn-green btn-sm" onclick="markRequest(${r.id})">Mark done</button>`}
+              <button class="btn btn-danger btn-sm" onclick="deleteRequest(${r.id})">✕</button>
+            </div></td>
+          </tr>`).join('')
+        : '<tr><td colspan="5" class="empty">No applications yet.</td></tr>';
+    }
+    async function markRequest(id) {
+      try { await api('contact-requests/' + id, 'PUT', {}); loadRequests(); loadDashboard(); }
+      catch (err) { toast(err.message, true); }
+    }
+    async function deleteRequest(id) {
+      if (!confirm('Delete this application?')) return;
+      try { await api('contact-requests/' + id, 'DELETE'); loadRequests(); loadDashboard(); }
+      catch (err) { toast(err.message, true); }
+    }
+
+    /* ---------- admin: reset affiliate password + view payout info ---------- */
+    async function resetAffPassword(id, name) {
+      const pw = prompt('Set a new password for ' + name + ' (min 6 characters):');
+      if (!pw) return;
+      try { await api('affiliates/' + id + '/password', 'PUT', { password: pw }); toast('Password updated ✓ — share it with them'); }
+      catch (err) { toast(err.message, true); }
+    }
+    function viewPayoutInfo(id) {
+      const a = AFFILIATES.find((x) => x.id === id);
+      let info = null;
+      try { info = a && a.payout_info ? JSON.parse(a.payout_info) : null; } catch {}
+      $('#info-title').textContent = 'Payout details — ' + (a ? a.name : '');
+      $('#info-body').innerHTML = (info && (info.method || info.details))
+        ? `<b>Method:</b> ${esc(info.method || '—')}\n\n${esc(info.details || '')}`
+        : '<b>No payout details on file.</b> Ask the affiliate to add them in their portal (Payout info).';
+      $('#info-modal').classList.add('open');
+    }
+    $('#info-modal').addEventListener('click', (e) => { if (e.target === $('#info-modal')) $('#info-modal').classList.remove('open'); });
+
+    /* ---------- marketing assets ---------- */
+    async function loadMarketing() {
+      const list = await api('marketing');
+      $('#assets-grid').innerHTML = list.length
+        ? list.map((m) => `
+          <div class="media-item">
+            <div class="media-thumb"><img src="${esc(m.path)}" alt="" /></div>
+            <div class="media-foot" style="flex-direction:column;align-items:stretch;gap:6px">
+              <div><b style="font-size:0.82rem">${esc(m.title) || 'Untitled'}</b>${m.product_name ? `<br/><span class="muted" style="font-size:0.72rem">${esc(m.product_name)}</span>` : ''}</div>
+              ${m.description ? `<div class="muted" style="font-size:0.74rem;line-height:1.4">${esc(m.description)}</div>` : ''}
+              <button class="btn btn-danger btn-sm" onclick="deleteAsset(${m.id})">Delete card</button>
+            </div>
+          </div>`).join('')
+        : '<p class="empty">No marketing materials yet — click "+ Add poster / image".</p>';
+    }
+    function openAssetModal() {
+      $('#as-title').value = ''; $('#as-desc').value = ''; $('#as-path').value = ''; $('#as-file').value = '';
+      $('#as-preview').innerHTML = '<span class="muted" style="font-size:0.7rem">preview</span>';
+      $('#as-err').textContent = '';
+      $('#as-product').innerHTML = '<option value="">— general / all products —</option>' + PRODUCTS.map((p) => `<option value="${esc(p.slug)}">${esc(p.name)}</option>`).join('');
+      $('#asset-modal').classList.add('open');
+    }
+    function closeAssetModal() { $('#asset-modal').classList.remove('open'); }
+    $('#asset-modal').addEventListener('click', (e) => { if (e.target === $('#asset-modal')) closeAssetModal(); });
+    $('#as-file').addEventListener('change', () => {
+      const file = $('#as-file').files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const r = await api('upload', 'POST', { data: reader.result });
+          $('#as-path').value = r.path;
+          $('#as-preview').innerHTML = `<img src="${esc(r.path)}" />`;
+        } catch (err) { toast(err.message, true); }
+      };
+      reader.readAsDataURL(file);
+    });
+    $('#asset-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!$('#as-path').value) { $('#as-err').textContent = 'Please choose an image.'; return; }
+      try {
+        await api('marketing', 'POST', { title: $('#as-title').value, description: $('#as-desc').value, product_slug: $('#as-product').value, path: $('#as-path').value });
+        closeAssetModal(); toast('Marketing material added ✓'); loadMarketing();
+      } catch (err) { $('#as-err').textContent = err.message; }
+    });
+    async function deleteAsset(id) {
+      if (!confirm('Delete this marketing material?')) return;
+      try { await api('marketing/' + id, 'DELETE'); toast('Deleted'); loadMarketing(); }
+      catch (err) { toast(err.message, true); }
+    }
+
+    /* ---------- settings (Stripe + site URL) ---------- */
+    async function loadSettings() {
+      const s = await api('settings');
+      const box = $('#stripe-status');
+      if (s.stripe_configured) {
+        const badge = s.stripe_mode === 'live' ? '<span class="badge-live">LIVE</span>' : '<span class="badge-test">TEST</span>';
+        box.className = 'settings-status on';
+        box.innerHTML = `✅ Stripe is connected ${badge} &nbsp; <span class="muted">${s.stripe_masked} · from ${s.stripe_source}</span>`;
+      } else {
+        box.className = 'settings-status off';
+        box.innerHTML = '⚠️ Stripe is not configured yet — checkout won\'t work until you add a key below.';
+      }
+      $('#set-stripe-key').value = '';
+      $('#set-domain').value = s.domain || '';
+      $('#set-eff-domain').textContent = s.effective_domain;
+    }
+    $('#save-stripe-btn').addEventListener('click', async () => {
+      $('#set-stripe-err').textContent = ''; $('#set-stripe-ok').textContent = '';
+      const btn = $('#save-stripe-btn'); btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Verifying…';
+      try {
+        const r = await api('settings', 'POST', { stripe_secret_key: $('#set-stripe-key').value });
+        $('#set-stripe-ok').textContent = r.cleared ? 'Stripe key cleared.' : `Key verified & saved ✓ (${r.mode} mode)`;
+        loadSettings();
+      } catch (err) { $('#set-stripe-err').textContent = err.message; }
+      finally { btn.disabled = false; btn.textContent = orig; }
+    });
+    $('#save-domain-btn').addEventListener('click', async () => {
+      $('#set-domain-err').textContent = ''; $('#set-domain-ok').textContent = '';
+      try {
+        await api('settings', 'POST', { domain: $('#set-domain').value });
+        $('#set-domain-ok').textContent = 'Site URL saved ✓';
+        loadSettings();
+      } catch (err) { $('#set-domain-err').textContent = err.message; }
+    });
+
+    /* ---------- product modal ---------- */
+    function toggleBtn(el, on) { el.classList.toggle('on', !!on); }
+    $('#pf-featured').addEventListener('click', () => $('#pf-featured').classList.toggle('on'));
+    $('#pf-active').addEventListener('click', () => $('#pf-active').classList.toggle('on'));
+
+    function setPreview(src) {
+      $('#pf-preview').innerHTML = src ? `<img src="${esc(src)}" onerror="this.remove()"/>` : '<span class="muted" style="font-size:0.7rem">preview</span>';
+    }
+    $('#pf-image').addEventListener('input', () => setPreview($('#pf-image').value.trim()));
+
+    $('#pf-file').addEventListener('change', () => {
+      const file = $('#pf-file').files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const r = await api('upload', 'POST', { data: reader.result });
+          $('#pf-image').value = r.path;
+          setPreview(r.path);
+          toast('Image uploaded ✓');
+        } catch (err) { toast(err.message, true); }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    /* ---- extra photos gallery ---- */
+    let modalImages = [];
+    function renderGallery() {
+      $('#pf-gallery').innerHTML = modalImages.map((src, i) => `
+        <div class="gal-item">
+          <img src="${esc(src)}" onerror="this.style.display='none'" />
+          <button type="button" class="gal-rm" onclick="removeGalleryImage(${i})">✕</button>
+        </div>`).join('');
+    }
+    function removeGalleryImage(i) { modalImages.splice(i, 1); renderGallery(); }
+
+    $('#pf-gallery-file').addEventListener('change', () => {
+      const files = [...$('#pf-gallery-file').files];
+      if (!files.length) return;
+      files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const r = await api('upload', 'POST', { data: reader.result });
+            modalImages.push(r.path);
+            renderGallery();
+          } catch (err) { toast(err.message, true); }
+        };
+        reader.readAsDataURL(file);
+      });
+      $('#pf-gallery-file').value = '';
+    });
+
+    /* ---- options / variants editor ---- */
+    function choiceRowHtml(label, priceCents) {
+      return `<div class="opt-choice-row">
+        <input class="lbl" placeholder="Choice label (e.g. Large, Red)" value="${esc(label || '')}" maxlength="40" />
+        <input class="price" type="number" step="0.01" min="0" placeholder="+$ extra" value="${priceCents ? (priceCents / 100).toFixed(2) : ''}" />
+        <button type="button" class="opt-x" data-act="rm-choice">✕</button>
+      </div>`;
+    }
+    function groupHtml(g) {
+      g = g || { name: '', type: 'select', choices: [{ label: '', price: 0 }] };
+      return `<div class="opt-group">
+        <div class="opt-group-head">
+          <input class="grp-name" placeholder="Option name (e.g. Size)" value="${esc(g.name)}" maxlength="40" />
+          <select class="grp-type">
+            <option value="select" ${g.type !== 'addon' ? 'selected' : ''}>Choose one</option>
+            <option value="addon" ${g.type === 'addon' ? 'selected' : ''}>Add-ons (multi)</option>
+          </select>
+          <button type="button" class="opt-x" data-act="rm-group">✕</button>
+        </div>
+        <div class="opt-choices">
+          ${(g.choices && g.choices.length ? g.choices : [{ label: '', price: 0 }]).map((c) => choiceRowHtml(c.label, c.price)).join('')}
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm opt-mini" data-act="add-choice" style="margin-top:4px">+ Add choice</button>
+      </div>`;
+    }
+    function renderOptionsEditor(groups) {
+      $('#pf-options').innerHTML = (groups || []).map(groupHtml).join('');
+    }
+    $('#pf-add-group').addEventListener('click', () => {
+      $('#pf-options').insertAdjacentHTML('beforeend', groupHtml());
+    });
+    $('#pf-options').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-act]');
+      if (!btn) return;
+      const act = btn.dataset.act;
+      if (act === 'rm-group') btn.closest('.opt-group').remove();
+      else if (act === 'rm-choice') btn.closest('.opt-choice-row').remove();
+      else if (act === 'add-choice') btn.closest('.opt-group').querySelector('.opt-choices').insertAdjacentHTML('beforeend', choiceRowHtml('', 0));
+    });
+    function collectOptions() {
+      return [...$('#pf-options').querySelectorAll('.opt-group')].map((groupEl) => {
+        const name = groupEl.querySelector('.grp-name').value.trim();
+        const type = groupEl.querySelector('.grp-type').value === 'addon' ? 'addon' : 'select';
+        const choices = [...groupEl.querySelectorAll('.opt-choice-row')].map((row) => ({
+          label: row.querySelector('.lbl').value.trim(),
+          price: Math.round(parseFloat(row.querySelector('.price').value || '0') * 100) || 0
+        })).filter((c) => c.label);
+        return { name, type, choices };
+      }).filter((g) => g.name && g.choices.length);
+    }
+
+    function openProductModal(slug) {
+      const p = slug ? PRODUCTS.find((x) => x.slug === slug) : null;
+      $('#product-modal-title').textContent = p ? 'Edit product' : 'Add product';
+      $('#pf-slug').value = p ? p.slug : '';
+      $('#pf-name').value = p ? p.name : '';
+      $('#pf-price').value = p ? (p.price / 100).toFixed(2) : '';
+      $('#pf-sale').value = p && p.sale_price ? (p.sale_price / 100).toFixed(2) : '';
+      $('#pf-cost').value = p && p.cost ? (p.cost / 100).toFixed(2) : '';
+      $('#pf-category').value = p && p.category_id ? p.category_id : '';
+      $('#pf-badge').value = p ? p.badge : '';
+      $('#pf-desc').value = p ? p.description : '';
+      $('#pf-long').value = p ? p.long_description : '';
+      $('#pf-image').value = p ? p.image : '';
+      $('#pf-file').value = '';
+      $('#pf-gallery-file').value = '';
+      try { modalImages = p && p.images ? JSON.parse(p.images) : []; } catch { modalImages = []; }
+      renderGallery();
+      let opts = [];
+      try { opts = p && p.options ? JSON.parse(p.options) : []; } catch { opts = []; }
+      renderOptionsEditor(opts);
+      setPreview(p ? p.image : '');
+      toggleBtn($('#pf-featured'), p ? p.featured : 0);
+      toggleBtn($('#pf-active'), p ? p.active : 1);
+      $('#pf-err').textContent = '';
+      $('#product-modal').classList.add('open');
+    }
+    function closeProductModal() { $('#product-modal').classList.remove('open'); }
+    $('#product-modal').addEventListener('click', (e) => { if (e.target === $('#product-modal')) closeProductModal(); });
+
+    $('#product-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const slug = $('#pf-slug').value;
+      const body = {
+        name: $('#pf-name').value,
+        price: Math.round(parseFloat($('#pf-price').value || '0') * 100),
+        sale_price: Math.round(parseFloat($('#pf-sale').value || '0') * 100) || 0,
+        cost: Math.round(parseFloat($('#pf-cost').value || '0') * 100) || 0,
+        category_id: $('#pf-category').value || null,
+        badge: $('#pf-badge').value,
+        description: $('#pf-desc').value,
+        long_description: $('#pf-long').value,
+        image: $('#pf-image').value.trim(),
+        images: modalImages,
+        options: collectOptions(),
+        featured: $('#pf-featured').classList.contains('on') ? 1 : 0,
+        active: $('#pf-active').classList.contains('on') ? 1 : 0
+      };
+      try {
+        if (slug) await api('products/' + slug, 'PUT', body);
+        else await api('products', 'POST', body);
+        closeProductModal();
+        toast(slug ? 'Product updated ✓' : 'Product added ✓');
+        loadProducts(); loadCategories(); loadDashboard();
+      } catch (err) { $('#pf-err').textContent = err.message; }
+    });
+
+    /* ---------- affiliates ---------- */
+    let AFFILIATES = [];
+    async function loadAffiliates() {
+      const list = await api('affiliates');
+      AFFILIATES = list;
+      $('#affiliates-body').innerHTML = list.length
+        ? list.map((a) => `
+          <tr>
+            <td><b>${esc(a.name)}</b><br/><span class="muted" style="font-size:0.78rem">${esc(a.email)}</span></td>
+            <td><code style="color:var(--gold-300)">${esc(a.code)}</code></td>
+            <td><span class="pill ${a.status === 'approved' ? 'on' : a.status === 'pending' ? 'pending' : 'suspended'}">${a.status.toUpperCase()}</span></td>
+            <td><input class="commission-input" type="number" min="0" max="90" step="0.5" value="${a.commission_pct}"
+                 onchange="setCommission(${a.id}, this.value, '${a.status}')" /></td>
+            <td>${a.clicks}</td>
+            <td>${a.orders}</td>
+            <td>${a.clicks > 0 ? '<b>' + (Math.round((a.orders / a.clicks) * 1000) / 10) + '%</b>' : '<span class="muted">—</span>'}</td>
+            <td>${fmt(a.sales)}</td>
+            <td><b style="color:var(--green)">${fmt(a.earned)}</b></td>
+            <td>${(() => { const owed = a.earned - (a.paid_out || 0); return owed > 0 ? `<b style="color:var(--gold-300)">${fmt(owed)}</b>` : '<span class="muted">—</span>'; })()}</td>
+            <td><div class="row-actions">
+              <button class="btn btn-ghost btn-sm" onclick="openPayoutModal(${a.id})">Pay</button>
+              <button class="btn btn-ghost btn-sm" onclick="viewPayoutInfo(${a.id})">💳 Info</button>
+              <button class="btn btn-ghost btn-sm" onclick="resetAffPassword(${a.id}, '${esc(a.name).replace(/'/g, "\\'")}')">🔑</button>
+              ${a.status !== 'approved' ? `<button class="btn btn-green btn-sm" onclick="setAffStatus(${a.id}, 'approved', ${a.commission_pct})">Approve</button>` : ''}
+              ${a.status === 'approved' ? `<button class="btn btn-danger btn-sm" onclick="setAffStatus(${a.id}, 'suspended', ${a.commission_pct})">Suspend</button>` : ''}
+              <button class="btn btn-danger btn-sm" onclick="deleteAffiliate(${a.id})">✕</button>
+            </div></td>
+          </tr>`).join('')
+        : '<tr><td colspan="11" class="empty">No affiliates yet — create one with "+ Add affiliate".</td></tr>';
+    }
+
+    async function setAffStatus(id, status, pct) {
+      try { await api('affiliates/' + id, 'PUT', { status, commission_pct: pct }); toast('Affiliate ' + status + ' ✓'); loadAffiliates(); loadDashboard(); }
+      catch (err) { toast(err.message, true); }
+    }
+    async function setCommission(id, pct, status) {
+      try { await api('affiliates/' + id, 'PUT', { status, commission_pct: Number(pct) }); toast('Commission updated ✓'); }
+      catch (err) { toast(err.message, true); }
+    }
+    async function deleteAffiliate(id) {
+      if (!confirm('Delete this affiliate account? Their past orders stay but lose attribution.')) return;
+      try { await api('affiliates/' + id, 'DELETE'); toast('Affiliate deleted'); loadAffiliates(); }
+      catch (err) { toast(err.message, true); }
+    }
+
+    /* create affiliate from admin */
+    $('#af-approved').addEventListener('click', () => $('#af-approved').classList.toggle('on'));
+    function openAffiliateModal() {
+      $('#af-name').value = ''; $('#af-email').value = ''; $('#af-pass').value = '';
+      $('#af-pct').value = '10'; $('#af-approved').classList.add('on'); $('#af-err').textContent = '';
+      $('#affiliate-modal').classList.add('open');
+    }
+    function closeAffiliateModal() { $('#affiliate-modal').classList.remove('open'); }
+    $('#affiliate-modal').addEventListener('click', (e) => { if (e.target === $('#affiliate-modal')) closeAffiliateModal(); });
+    $('#affiliate-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('#af-err').textContent = '';
+      const body = {
+        name: $('#af-name').value,
+        email: $('#af-email').value,
+        password: $('#af-pass').value,
+        commission_pct: Number($('#af-pct').value),
+        status: $('#af-approved').classList.contains('on') ? 'approved' : 'pending'
+      };
+      try {
+        const r = await api('affiliates', 'POST', body);
+        closeAffiliateModal();
+        toast('Affiliate created — code ' + r.code + ' ✓');
+        loadAffiliates(); loadDashboard();
+      } catch (err) { $('#af-err').textContent = err.message; }
+    });
+
+    /* ---------- orders ---------- */
+    async function loadOrders() {
+      const list = await api('orders');
+      $('#orders-body').innerHTML = list.length
+        ? list.map((o) => {
+            let items = [];
+            try { items = JSON.parse(o.items_json); } catch {}
+            const itemsText = items.map((i) => {
+              const opts = (i.options || []).map((c) => `${esc(c.group)}: ${esc(c.label)}`).join(' · ');
+              return `${esc(i.name || i.slug)} ×${i.qty}${opts ? ` <span style="color:var(--gold-300)">(${opts})</span>` : ''}`;
+            }).join('<br/>');
+            return `<tr>
+              <td>#${o.id}</td>
+              <td>${esc(o.customer_email) || '<span class="muted">—</span>'}${o.customer_phone ? `<br/><span class="muted" style="font-size:0.78rem">📞 ${esc(o.customer_phone)}</span>` : ''}</td>
+              <td class="muted" style="max-width:260px">${itemsText || '—'}</td>
+              <td><b>${fmt(o.amount_total)}</b></td>
+              <td>${o.profit ? fmt(o.profit) : '<span class="muted">—</span>'}</td>
+              <td>${o.affiliate_name ? esc(o.affiliate_name) + ' <span class="muted">(' + esc(o.affiliate_code) + ')</span>' : '<span class="muted">direct</span>'}</td>
+              <td>${o.commission ? '<b style="color:var(--green)">' + fmt(o.commission) + '</b>' : '<span class="muted">—</span>'}</td>
+              <td class="muted">${o.created_at.slice(0, 16)}</td>
+            </tr>`;
+          }).join('')
+        : '<tr><td colspan="8" class="empty">No orders yet.</td></tr>';
+    }
+
+    /* ---------- boot: try session ---------- */
+    (async function boot() {
+      try { await api('summary'); showApp(); } catch { showLogin(); }
+    })();
+  </script>
+</body>
+</html>

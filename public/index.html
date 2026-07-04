@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>American Pride Store — Official Trump Merchandise</title>
+  <meta name="description" content="Premium American-made Trump merchandise. Hats, tees, flags and more. Secure checkout with Stripe." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇺🇸</text></svg>" />
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <header class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a href="#" class="logo">
+        <span class="logo-star">★</span>
+        <span class="logo-text">AMERICAN<em>PRIDE</em></span>
+      </a>
+      <nav class="nav-links">
+        <a href="#shop">Shop</a>
+        <a href="#about">Why Us</a>
+        <a href="#reviews">Reviews</a>
+      </nav>
+      <button class="cart-btn" id="cart-btn" aria-label="Open cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cart-count" id="cart-count">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <div class="hero-bg">
+      <div class="stars-layer" id="stars-layer"></div>
+      <div class="stripe-glow stripe-glow-red"></div>
+      <div class="stripe-glow stripe-glow-blue"></div>
+      <div class="rocket-x" aria-hidden="true">
+        <div class="rocket-y">
+          <span class="rocket-trail"></span>
+          <span class="rocket-body">🚀</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-badge reveal">🇺🇸 PREMIUM PATRIOT GEAR</div>
+      <h1 class="hero-title">
+        <span class="line reveal">WEAR YOUR</span>
+        <span class="line line-gradient reveal">FREEDOM</span>
+        <span class="line reveal">WITH PRIDE</span>
+      </h1>
+      <p class="hero-sub reveal">Premium Trump merchandise for true patriots. Hats, tees, flags &amp; more — quality gear delivered to your door.</p>
+      <div class="hero-cta reveal">
+        <a href="#shop" class="btn btn-primary">SHOP NOW <span class="btn-arrow">→</span></a>
+        <a href="#about" class="btn btn-ghost">Why Choose Us</a>
+      </div>
+      <div class="hero-stats reveal">
+        <div class="stat"><span class="stat-num" data-count="50000" data-suffix="+">0</span><span class="stat-label">Happy Patriots</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num" data-count="4.9" data-decimals="1" data-suffix="★">0</span><span class="stat-label">Avg Rating</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num" data-count="100" data-suffix="%">0</span><span class="stat-label">Secure Checkout</span></div>
+      </div>
+    </div>
+    <div class="hero-flag-wave" aria-hidden="true">
+      <div class="wave-stripe"></div>
+      <div class="wave-stripe"></div>
+      <div class="wave-stripe"></div>
+    </div>
+  </section>
+
+  <!-- ===== MARQUEE ===== -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>★ PREMIUM PATRIOT GEAR</span><span>★ FREE SHIPPING</span><span>★ SECURE CHECKOUT</span><span>★ 30-DAY RETURNS</span>
+      <span>★ PREMIUM PATRIOT GEAR</span><span>★ FREE SHIPPING</span><span>★ SECURE CHECKOUT</span><span>★ 30-DAY RETURNS</span>
+      <span>★ PREMIUM PATRIOT GEAR</span><span>★ FREE SHIPPING</span><span>★ SECURE CHECKOUT</span><span>★ 30-DAY RETURNS</span>
+    </div>
+  </div>
+
+  <!-- ===== SHOP ===== -->
+  <section class="shop" id="shop">
+    <div class="section-head reveal">
+      <span class="section-tag">THE COLLECTION</span>
+      <h2>Gear Up, <span class="text-gradient">Patriot</span></h2>
+      <p>Every product is hand-picked for true patriots, built with premium materials.</p>
+    </div>
+    <div class="filter-tabs reveal" id="filter-tabs"></div>
+    <div class="product-grid" id="product-grid">
+      <!-- products injected by app.js -->
+    </div>
+  </section>
+
+  <!-- ===== ABOUT / FEATURES ===== -->
+  <section class="features" id="about">
+    <div class="section-head reveal">
+      <span class="section-tag">WHY AMERICAN PRIDE</span>
+      <h2>Built <span class="text-gradient">Different</span></h2>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon">🦅</div>
+        <h3>Patriot Approved</h3>
+        <p>Curated designs celebrating America — loved by thousands of proud patriots.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">🔒</div>
+        <h3>Secure Checkout</h3>
+        <p>Payments powered by Stripe. Your card details never touch our servers.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">🚚</div>
+        <h3>Free Worldwide Shipping</h3>
+        <p>Free shipping. Delivery typically takes 7–12 days.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">⭐</div>
+        <h3>Premium Quality</h3>
+        <p>Heavyweight fabrics, durable embroidery and fade-resistant prints.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== REVIEWS ===== -->
+  <section class="reviews" id="reviews">
+    <div class="section-head reveal">
+      <span class="section-tag">PATRIOT REVIEWS</span>
+      <h2>Loved by <span class="text-gradient">Thousands</span></h2>
+    </div>
+    <div class="review-grid">
+      <div class="review-card reveal">
+        <div class="review-stars">★★★★★</div>
+        <p>"Best quality hat I've ever owned. The embroidery is perfect and it shipped in two days!"</p>
+        <div class="review-author"><span class="review-avatar">JD</span> John D. — Texas</div>
+      </div>
+      <div class="review-card reveal">
+        <div class="review-stars">★★★★★</div>
+        <p>"The flag is heavy-duty and looks amazing on my porch. Real American quality."</p>
+        <div class="review-author"><span class="review-avatar">SM</span> Sarah M. — Florida</div>
+      </div>
+      <div class="review-card reveal">
+        <div class="review-stars">★★★★★</div>
+        <p>"Bought the hoodie and the mug. Both exceeded expectations. Will order again!"</p>
+        <div class="review-author"><span class="review-avatar">MR</span> Mike R. — Ohio</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA BANNER ===== -->
+  <section class="cta-banner reveal">
+    <div class="cta-inner">
+      <h2>JOIN THE <span class="text-gradient">MOVEMENT</span></h2>
+      <p>Limited stock on best sellers. Get yours before they're gone.</p>
+      <a href="#shop" class="btn btn-primary">SHOP THE COLLECTION <span class="btn-arrow">→</span></a>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo-star">★</span> AMERICAN<em>PRIDE</em>
+        <p>Premium patriotic merchandise, proudly made in the USA.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Shop</h4>
+        <a href="#shop">All Products</a>
+        <a href="#shop">Hats</a>
+        <a href="#shop">Apparel</a>
+        <a href="#shop">Flags</a>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <a href="#">Shipping</a>
+        <a href="#">Returns</a>
+        <a href="#">Contact</a>
+        <a href="/affiliate/">Become an Affiliate 💰</a>
+      </div>
+      <div class="footer-col">
+        <h4>Secure Payments</h4>
+        <p class="footer-pay">Powered by <strong>Stripe</strong><br/>Visa · Mastercard · Amex · Apple Pay</p>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 American Pride Store. All rights reserved. 🇺🇸</div>
+  </footer>
+
+  <!-- ===== CART DRAWER ===== -->
+  <div class="cart-overlay" id="cart-overlay"></div>
+  <aside class="cart-drawer" id="cart-drawer" aria-label="Shopping cart">
+    <div class="cart-head">
+      <h3>Your Cart <span id="cart-head-count"></span></h3>
+      <button class="cart-close" id="cart-close" aria-label="Close cart">✕</button>
+    </div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-foot">
+      <div class="cart-total-row">
+        <span>Total</span>
+        <span class="cart-total" id="cart-total">$0.00</span>
+      </div>
+      <p class="cart-note">Shipping &amp; taxes calculated at checkout</p>
+      <button class="btn btn-primary btn-checkout" id="checkout-btn">
+        <span id="checkout-label">SECURE CHECKOUT 🔒</span>
+      </button>
+      <p class="cart-error" id="cart-error"></p>
+    </div>
+  </aside>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">Added to cart! 🇺🇸</div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
