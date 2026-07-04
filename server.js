@@ -40,6 +40,76 @@ function getStripe() {
 }
 
 app.use(express.json({ limit: '6mb' }));
+
+/* ============================================================
+   SEO / social meta (server-rendered so crawlers see it)
+   ============================================================ */
+function htmlEscape(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function absoluteUrl(p) {
+  const base = currentDomain().replace(/\/+$/, '');
+  if (!p) return base;
+  return /^https?:\/\//i.test(p) ? p : base + (p.startsWith('/') ? '' : '/') + p;
+}
+// A share image guaranteed to be a real raster (PNG/JPG) so it renders on social apps.
+function siteOgImage() {
+  const set = getSetting('og_image');
+  if (set) return absoluteUrl(set);
+  const row = db.prepare("SELECT image FROM products WHERE active = 1 AND image LIKE '%.png' OR image LIKE '%.jpg' OR image LIKE '%.jpeg' OR image LIKE '%.webp' ORDER BY featured DESC, created_at DESC LIMIT 1").get();
+  if (row && row.image) return absoluteUrl(row.image);
+  return absoluteUrl('/images/og-cover.svg');
+}
+function rasterOrDefault(imgPath) {
+  return imgPath && /\.(png|jpe?g|webp)$/i.test(imgPath) ? absoluteUrl(imgPath) : siteOgImage();
+}
+function buildMetaTags({ title, description, url, image, type = 'website', jsonld, extra = '' }) {
+  const t = htmlEscape(title);
+  const d = htmlEscape(String(description || '').replace(/\s+/g, ' ').trim().slice(0, 300));
+  const u = htmlEscape(url);
+  const img = htmlEscape(image);
+  let tags = `
+  <title>${t}</title>
+  <meta name="description" content="${d}" />
+  <link rel="canonical" href="${u}" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#0a1228" />
+  <meta property="og:type" content="${type}" />
+  <meta property="og:site_name" content="American Pride Store" />
+  <meta property="og:title" content="${t}" />
+  <meta property="og:description" content="${d}" />
+  <meta property="og:url" content="${u}" />
+  <meta property="og:image" content="${img}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${t}" />
+  <meta name="twitter:description" content="${d}" />
+  <meta name="twitter:image" content="${img}" />${extra}`;
+  if (jsonld) tags += `\n  <script type="application/ld+json">${JSON.stringify(jsonld)}</script>`;
+  return tags;
+}
+const _pageCache = {};
+function renderPage(file, metaBlock) {
+  if (!_pageCache[file]) _pageCache[file] = fs.readFileSync(path.join(__dirname, 'public', file), 'utf8');
+  return _pageCache[file].replace('<!--META-->', metaBlock);
+}
+
+// Homepage — must be BEFORE express.static (which would otherwise serve index.html raw)
+app.get('/', (req, res) => {
+  const url = currentDomain().replace(/\/+$/, '') + '/';
+  const img = siteOgImage();
+  const jsonld = {
+    '@context': 'https://schema.org', '@type': 'Store',
+    name: 'American Pride Store', url,
+    description: 'Premium American Trump merchandise — hats, tees, flags and more.',
+    image: img
+  };
+  res.type('html').send(renderPage('index.html', buildMetaTags({
+    title: 'American Pride Store — Official Trump Merchandise',
+    description: 'Premium American Trump merchandise. Hats, tees, flags & more. Secure checkout with Stripe.',
+    url, image: img, type: 'website', jsonld
+  })));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ============================================================
@@ -602,11 +672,18 @@ app.get('/api/admin/settings', requireAdmin, (req, res) => {
     stripe_mode: key.startsWith('sk_live') || key.startsWith('rk_live') ? 'live' : (key ? 'test' : ''),
     stripe_source: fromDb ? 'admin panel' : (key ? '.env file' : ''),
     domain: getSetting('domain'),
-    effective_domain: currentDomain()
+    effective_domain: currentDomain(),
+    og_image: getSetting('og_image'),
+    og_effective: siteOgImage()
   });
 });
 
 app.post('/api/admin/settings', requireAdmin, async (req, res) => {
+  // Save the default social share image if provided
+  if (typeof req.body.og_image === 'string') {
+    setSetting('og_image', req.body.og_image.trim().slice(0, 300));
+  }
+
   // Save the site URL if provided
   if (typeof req.body.domain === 'string') {
     let d = req.body.domain.trim().replace(/\/+$/, '').slice(0, 200);
@@ -1068,7 +1145,48 @@ app.get('/api/admin/orders', requireAdmin, (req, res) => {
    Pages
    ============================================================ */
 app.get('/product/:slug', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'product.html'));
+  const p = db.prepare(`
+    SELECT p.*, c.name AS category_name FROM products p
+    LEFT JOIN categories c ON c.id = p.category_id
+    WHERE p.slug = ? AND p.active = 1
+  `).get(req.params.slug);
+
+  if (!p) {
+    return res.status(404).type('html').send(renderPage('product.html', buildMetaTags({
+      title: 'Product not found — American Pride Store',
+      description: 'This product is no longer available.',
+      url: absoluteUrl('/product/' + req.params.slug), image: siteOgImage()
+    })));
+  }
+
+  const price = (effectivePrice(p) / 100).toFixed(2);
+  const url = absoluteUrl('/product/' + p.slug);
+  const img = rasterOrDefault(p.image);
+  const desc = p.description || `${p.name} — premium patriotic merchandise from American Pride Store.`;
+  const jsonld = {
+    '@context': 'https://schema.org', '@type': 'Product',
+    name: p.name, image: [img], description: desc, sku: p.slug,
+    category: p.category_name || undefined,
+    brand: { '@type': 'Brand', name: 'American Pride Store' },
+    offers: { '@type': 'Offer', url, priceCurrency: 'usd'.toUpperCase(), price, availability: 'https://schema.org/InStock' }
+  };
+  const extra = `\n  <meta property="product:price:amount" content="${price}" />\n  <meta property="product:price:currency" content="USD" />`;
+  res.type('html').send(renderPage('product.html', buildMetaTags({
+    title: `${p.name} — American Pride Store`,
+    description: desc, url, image: img, type: 'product', jsonld, extra
+  })));
+});
+
+/* ---------- SEO: robots.txt + sitemap.xml ---------- */
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\n\nSitemap: ${absoluteUrl('/sitemap.xml')}\n`);
+});
+app.get('/sitemap.xml', (req, res) => {
+  const base = currentDomain().replace(/\/+$/, '');
+  const prods = db.prepare('SELECT slug FROM products WHERE active = 1').all();
+  let urls = `<url><loc>${base}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`;
+  for (const p of prods) urls += `<url><loc>${base}/product/${p.slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+  res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
 });
 
 app.listen(PORT, () => {

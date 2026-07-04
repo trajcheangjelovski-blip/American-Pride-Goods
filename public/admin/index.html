@@ -442,6 +442,19 @@
             <button class="btn btn-red" id="save-domain-btn" style="margin-top:12px">Save site URL</button>
           </div>
         </div>
+
+        <div class="panel" style="max-width:640px">
+          <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">📣 Social share image</h3>
+          <div style="padding:20px">
+            <p class="muted" style="font-size:0.85rem;margin-bottom:12px">The image shown when your <b>homepage</b> link is shared on Facebook, WhatsApp, X, etc. Best size <b>1200×630</b> PNG/JPG. (Individual products automatically use their own photo.)</p>
+            <div class="img-preview" id="og-preview" style="width:200px;height:105px"><span class="muted" style="font-size:0.7rem">preview</span></div>
+            <input type="file" id="og-file" accept="image/png,image/jpeg,image/webp" style="padding:8px;margin-top:10px" />
+            <input id="og-path" placeholder="…or paste an image path" style="margin-top:8px" />
+            <div class="err" id="set-og-err"></div>
+            <div class="ok-msg" id="set-og-ok"></div>
+            <button class="btn btn-red" id="save-og-btn" style="margin-top:12px">Save share image</button>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -1049,7 +1062,24 @@
       $('#set-stripe-key').value = '';
       $('#set-domain').value = s.domain || '';
       $('#set-eff-domain').textContent = s.effective_domain;
+      $('#og-path').value = s.og_image || '';
+      $('#og-preview').innerHTML = s.og_effective ? `<img src="${esc(s.og_effective)}" style="width:100%;height:100%;object-fit:cover" onerror="this.remove()"/>` : '<span class="muted" style="font-size:0.7rem">preview</span>';
     }
+    $('#og-file').addEventListener('change', () => {
+      const file = $('#og-file').files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try { const r = await api('upload', 'POST', { data: reader.result }); $('#og-path').value = r.path; $('#og-preview').innerHTML = `<img src="${esc(r.path)}" style="width:100%;height:100%;object-fit:cover"/>`; }
+        catch (err) { $('#set-og-err').textContent = err.message; }
+      };
+      reader.readAsDataURL(file);
+    });
+    $('#save-og-btn').addEventListener('click', async () => {
+      $('#set-og-err').textContent = ''; $('#set-og-ok').textContent = '';
+      try { await api('settings', 'POST', { og_image: $('#og-path').value.trim() }); $('#set-og-ok').textContent = 'Share image saved ✓'; loadSettings(); }
+      catch (err) { $('#set-og-err').textContent = err.message; }
+    });
     $('#save-stripe-btn').addEventListener('click', async () => {
       $('#set-stripe-err').textContent = ''; $('#set-stripe-ok').textContent = '';
       const btn = $('#save-stripe-btn'); btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Verifying…';
