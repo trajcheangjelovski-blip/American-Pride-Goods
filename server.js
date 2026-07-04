@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const express = require('express');
+const sharp = require('sharp');
 const db = require('./db');
 
 const Stripe = require('stripe');
@@ -63,6 +64,14 @@ function siteOgImage() {
 function rasterOrDefault(imgPath) {
   return imgPath && /\.(png|jpe?g|webp)$/i.test(imgPath) ? absoluteUrl(imgPath) : siteOgImage();
 }
+// The raw (public) image path used as the source for the site's share banner.
+function siteOgSource() {
+  const set = getSetting('og_image');
+  if (set) return set;
+  const row = db.prepare("SELECT image FROM products WHERE active = 1 AND (image LIKE '%.png' OR image LIKE '%.jpg' OR image LIKE '%.jpeg' OR image LIKE '%.webp') ORDER BY featured DESC, created_at DESC LIMIT 1").get();
+  return (row && row.image) ? row.image : '/images/og-cover.svg';
+}
+const baseNoExt = (p) => path.basename(p || '').replace(/\.[^.]+$/, '');
 function buildMetaTags({ title, description, url, image, type = 'website', jsonld, extra = '' }) {
   const t = htmlEscape(title);
   const d = htmlEscape(String(description || '').replace(/\s+/g, ' ').trim().slice(0, 300));
@@ -80,6 +89,8 @@ function buildMetaTags({ title, description, url, image, type = 'website', jsonl
   <meta property="og:description" content="${d}" />
   <meta property="og:url" content="${u}" />
   <meta property="og:image" content="${img}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${t}" />
   <meta name="twitter:description" content="${d}" />
@@ -93,10 +104,39 @@ function renderPage(file, metaBlock) {
   return _pageCache[file].replace('<!--META-->', metaBlock);
 }
 
+// Generate a proper 1200x630 landscape share image (product photo centered on a
+// navy brand background) so link previews look right instead of a giant square.
+const OG_DIR = path.join(__dirname, 'public', 'images', 'og-cache');
+async function ensureOgImage(publicImagePath, cacheName) {
+  try {
+    if (!publicImagePath || /^https?:\/\//i.test(publicImagePath)) return null;
+    const srcAbs = path.join(__dirname, 'public', publicImagePath.replace(/^\//, ''));
+    if (!fs.existsSync(srcAbs)) return null;
+    if (!fs.existsSync(OG_DIR)) fs.mkdirSync(OG_DIR, { recursive: true });
+    const safe = cacheName.replace(/[^a-z0-9._-]/gi, '_').slice(0, 100);
+    const outAbs = path.join(OG_DIR, safe + '.png');
+    const outPublic = '/images/og-cache/' + safe + '.png';
+    // (re)generate if missing or older than the source image
+    if (!fs.existsSync(outAbs) || fs.statSync(outAbs).mtimeMs < fs.statSync(srcAbs).mtimeMs) {
+      await sharp(srcAbs)
+        .resize(1000, 520, { fit: 'contain', background: { r: 10, g: 18, b: 40, alpha: 0 } })
+        .extend({ top: 55, bottom: 55, left: 100, right: 100, background: { r: 10, g: 18, b: 40, alpha: 1 } })
+        .flatten({ background: { r: 10, g: 18, b: 40 } })
+        .png()
+        .toFile(outAbs);
+    }
+    return outPublic;
+  } catch {
+    return null;
+  }
+}
+
 // Homepage — must be BEFORE express.static (which would otherwise serve index.html raw)
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
   const url = currentDomain().replace(/\/+$/, '') + '/';
-  const img = siteOgImage();
+  const src = siteOgSource();
+  const og = await ensureOgImage(src, 'home-' + baseNoExt(src));
+  const img = absoluteUrl(og || src);
   const jsonld = {
     '@context': 'https://schema.org', '@type': 'Store',
     name: 'American Pride Store', url,
@@ -1144,7 +1184,7 @@ app.get('/api/admin/orders', requireAdmin, (req, res) => {
 /* ============================================================
    Pages
    ============================================================ */
-app.get('/product/:slug', (req, res) => {
+app.get('/product/:slug', async (req, res) => {
   const p = db.prepare(`
     SELECT p.*, c.name AS category_name FROM products p
     LEFT JOIN categories c ON c.id = p.category_id
@@ -1161,7 +1201,10 @@ app.get('/product/:slug', (req, res) => {
 
   const price = (effectivePrice(p) / 100).toFixed(2);
   const url = absoluteUrl('/product/' + p.slug);
-  const img = rasterOrDefault(p.image);
+  // Build a 1200x630 landscape share image from the product photo.
+  let og = await ensureOgImage(p.image, p.slug + '-' + baseNoExt(p.image));
+  if (!og) { const s = siteOgSource(); og = await ensureOgImage(s, 'home-' + baseNoExt(s)); }
+  const img = og ? absoluteUrl(og) : rasterOrDefault(p.image);
   const desc = p.description || `${p.name} — premium patriotic merchandise from American Pride Store.`;
   const jsonld = {
     '@context': 'https://schema.org', '@type': 'Product',
