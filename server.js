@@ -90,7 +90,7 @@ function buildMetaTags({ title, description, url, image, type = 'website', jsonl
   <meta property="og:url" content="${u}" />
   <meta property="og:image" content="${img}" />
   <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
+  <meta property="og:image:height" content="630" />${/\.jpe?g$/i.test(image) ? '\n  <meta property="og:image:type" content="image/jpeg" />' : (/\.png$/i.test(image) ? '\n  <meta property="og:image:type" content="image/png" />' : '')}
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${t}" />
   <meta name="twitter:description" content="${d}" />
@@ -114,15 +114,17 @@ async function ensureOgImage(publicImagePath, cacheName) {
     if (!fs.existsSync(srcAbs)) return null;
     if (!fs.existsSync(OG_DIR)) fs.mkdirSync(OG_DIR, { recursive: true });
     const safe = cacheName.replace(/[^a-z0-9._-]/gi, '_').slice(0, 100);
-    const outAbs = path.join(OG_DIR, safe + '.png');
-    const outPublic = '/images/og-cache/' + safe + '.png';
+    // JPEG: ~5x smaller than PNG so WhatsApp/Messenger never skip it (their
+    // preview limit is ~600KB), and the .jpg URL busts caches of the old .png.
+    const outAbs = path.join(OG_DIR, safe + '.jpg');
+    const outPublic = '/images/og-cache/' + safe + '.jpg';
     // (re)generate if missing or older than the source image
     if (!fs.existsSync(outAbs) || fs.statSync(outAbs).mtimeMs < fs.statSync(srcAbs).mtimeMs) {
       await sharp(srcAbs)
         .resize(1000, 520, { fit: 'contain', background: { r: 10, g: 18, b: 40, alpha: 0 } })
         .extend({ top: 55, bottom: 55, left: 100, right: 100, background: { r: 10, g: 18, b: 40, alpha: 1 } })
         .flatten({ background: { r: 10, g: 18, b: 40 } })
-        .png()
+        .jpeg({ quality: 84, mozjpeg: true })
         .toFile(outAbs);
     }
     return outPublic;
