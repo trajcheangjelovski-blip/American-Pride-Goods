@@ -95,6 +95,18 @@ db.exec(`
     PRIMARY KEY (affiliate_id, product_slug)
   );
 
+  CREATE TABLE IF NOT EXISTS posts (
+    slug          TEXT PRIMARY KEY,
+    title         TEXT NOT NULL,
+    excerpt       TEXT DEFAULT '',
+    content       TEXT DEFAULT '',
+    cover         TEXT DEFAULT '',
+    product_slugs TEXT DEFAULT '[]',
+    published     INTEGER DEFAULT 1,
+    created_at    TEXT DEFAULT (datetime('now')),
+    updated_at    TEXT DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS marketing_assets (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     title        TEXT DEFAULT '',

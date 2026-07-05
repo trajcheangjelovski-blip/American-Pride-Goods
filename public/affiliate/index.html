@@ -239,7 +239,7 @@
             </span>
           </div>
           <div class="period-sum" id="aff-period-sum"></div>
-          <div class="table-scroll"><table><thead><tr><th>Product</th><th>Clicks</th></tr></thead><tbody id="aff-clicks"></tbody></table></div>
+          <div class="table-scroll"><table><thead><tr><th>Page (product or blog post)</th><th>Clicks</th></tr></thead><tbody id="aff-clicks"></tbody></table></div>
         </div>
         <div class="panel">
           <h3>Your referred orders</h3>
@@ -256,6 +256,14 @@
           <div class="link-card" style="margin-top:16px;margin-bottom:0">
             <code id="prod-link">Select a product…</code>
             <button class="btn btn-red" id="prod-copy" style="padding:12px 22px;font-size:0.82rem">COPY</button>
+          </div>
+        </div></div>
+        <div class="panel"><div class="panel-body">
+          <p class="muted" style="font-size:0.9rem;margin-bottom:14px">📝 Or share a <b>blog article</b> — product ads inside the article carry your referral, so purchases from it earn your commission too.</p>
+          <select id="post-select"></select>
+          <div class="link-card" style="margin-top:16px;margin-bottom:0">
+            <code id="post-link">Select an article…</code>
+            <button class="btn btn-red" id="post-copy" style="padding:12px 22px;font-size:0.82rem">COPY</button>
           </div>
         </div></div>
       </section>
@@ -557,16 +565,33 @@
           sel.dataset.loaded = '1';
         } catch {}
       }
+      const psel = $('#post-select');
+      if (!psel.dataset.loaded) {
+        try {
+          const posts = await (await fetch('/api/posts')).json();
+          psel.innerHTML = posts.length
+            ? posts.map((p) => `<option value="${esc(p.slug)}">${esc(p.title)}</option>`).join('')
+            : '<option value="">No articles yet</option>';
+          psel.dataset.loaded = '1';
+        } catch {}
+      }
       updateProdLink();
+      updatePostLink();
     }
     function updateProdLink() {
       const slug = $('#prod-select').value;
       $('#prod-link').textContent = slug ? `${location.origin}/product/${slug}?ref=${MY_CODE}` : 'No products yet.';
     }
+    function updatePostLink() {
+      const slug = $('#post-select').value;
+      $('#post-link').textContent = slug ? `${location.origin}/blog/${slug}?ref=${MY_CODE}` : 'No articles yet.';
+    }
     $('#prod-select').addEventListener('change', updateProdLink);
+    $('#post-select').addEventListener('change', updatePostLink);
     async function copyText(t) { try { await navigator.clipboard.writeText(t); } catch {} toast('Copied! 🎉'); }
     $('#copy-btn').addEventListener('click', () => copyText($('#aff-link').textContent));
     $('#prod-copy').addEventListener('click', () => copyText($('#prod-link').textContent));
+    $('#post-copy').addEventListener('click', () => copyText($('#post-link').textContent));
 
     /* ---- messages ---- */
     async function loadMessages() {

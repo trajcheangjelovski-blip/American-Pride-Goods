@@ -384,6 +384,47 @@ app.get('/api/product/:slug', (req, res) => {
   res.json({ product, related });
 });
 
+/* ---------- Blog (public) ---------- */
+app.get('/api/posts', (req, res) => {
+  res.json(db.prepare(`
+    SELECT slug, title, excerpt, cover, created_at FROM posts
+    WHERE published = 1 ORDER BY created_at DESC LIMIT 100
+  `).all());
+});
+
+app.get('/api/post/:slug', (req, res) => {
+  const post = db.prepare('SELECT * FROM posts WHERE slug = ? AND published = 1').get(req.params.slug);
+  if (!post) return res.status(404).json({ error: 'Post not found' });
+
+  // Products advertised inside the post: admin's picks, else featured products.
+  let slugs = [];
+  try { slugs = JSON.parse(post.product_slugs) || []; } catch {}
+  let ads = [];
+  if (slugs.length) {
+    const get = db.prepare(`
+      SELECT p.slug AS id, p.slug, p.name, p.description, p.price, p.sale_price, p.image, p.badge, p.options
+      FROM products p WHERE p.slug = ? AND p.active = 1`);
+    ads = slugs.map((s) => get.get(s)).filter(Boolean);
+  }
+  if (!ads.length) {
+    ads = db.prepare(`
+      SELECT p.slug AS id, p.slug, p.name, p.description, p.price, p.sale_price, p.image, p.badge, p.options
+      FROM products p WHERE p.active = 1 ORDER BY p.featured DESC, RANDOM() LIMIT 2`).all();
+  }
+  const affiliate = affiliateByRef(req.query.ref);
+  for (const a of ads.slice(0, 2)) {
+    try { a.options = JSON.parse(a.options) || []; } catch { a.options = []; }
+    applyAffiliatePrice(a, affiliate);
+  }
+
+  const more = db.prepare(`
+    SELECT slug, title, excerpt, cover, created_at FROM posts
+    WHERE published = 1 AND slug != ? ORDER BY created_at DESC LIMIT 3
+  `).all(post.slug);
+
+  res.json({ post: { slug: post.slug, title: post.title, excerpt: post.excerpt, content: post.content, cover: post.cover, created_at: post.created_at }, ads: ads.slice(0, 2), more });
+});
+
 app.post('/api/track/:code', (req, res) => {
   const code = req.params.code.toUpperCase();
   db.prepare('UPDATE affiliates SET clicks = clicks + 1 WHERE code = ?').run(code);
@@ -677,9 +718,12 @@ app.get('/api/affiliate/stats', requireAffiliate, (req, res) => {
   const o = db.prepare('SELECT COUNT(*) AS orders, COALESCE(SUM(amount_total),0) AS sales, COALESCE(SUM(commission),0) AS earned FROM orders WHERE affiliate_id = ? AND date(created_at) BETWEEN ? AND ?').get(id, from, to);
   const conversion = views > 0 ? Math.round((o.orders / views) * 1000) / 10 : 0;
   const by_product = db.prepare(`
-    SELECT pv.path, pr.name AS product_name, COUNT(*) AS views
-    FROM pageviews pv LEFT JOIN products pr ON ('/product/' || pr.slug) = pv.path
-    WHERE pv.ref = ? AND pv.path LIKE '/product/%' AND date(pv.created_at) BETWEEN ? AND ?
+    SELECT pv.path, COALESCE(pr.name, '📝 ' || po.title) AS product_name, COUNT(*) AS views
+    FROM pageviews pv
+    LEFT JOIN products pr ON ('/product/' || pr.slug) = pv.path
+    LEFT JOIN posts po ON ('/blog/' || po.slug) = pv.path
+    WHERE pv.ref = ? AND (pv.path LIKE '/product/%' OR pv.path LIKE '/blog/%')
+      AND date(pv.created_at) BETWEEN ? AND ?
     GROUP BY pv.path ORDER BY views DESC LIMIT 100
   `).all(code, from, to);
   res.json({ from, to, views, orders: o.orders, sales: o.sales, earned: o.earned, conversion, by_product });
@@ -891,6 +935,67 @@ app.put('/api/admin/products/:slug', requireAdmin, (req, res) => {
 
 app.delete('/api/admin/products/:slug', requireAdmin, (req, res) => {
   db.prepare('DELETE FROM products WHERE slug = ?').run(req.params.slug);
+  res.json({ ok: true });
+});
+
+/* ---------- Blog (admin) ---------- */
+// Admin-authored HTML, but strip scripts/handlers anyway for safety.
+function sanitizeHtml(html) {
+  return String(html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/javascript\s*:/gi, '')
+    .slice(0, 200000);
+}
+
+function postFields(body) {
+  let slugs = body.product_slugs;
+  if (typeof slugs === 'string') { try { slugs = JSON.parse(slugs); } catch { slugs = []; } }
+  if (!Array.isArray(slugs)) slugs = [];
+  return {
+    title: String(body.title || '').trim().slice(0, 160),
+    excerpt: String(body.excerpt || '').trim().slice(0, 400),
+    content: sanitizeHtml(body.content),
+    cover: String(body.cover || '').trim().slice(0, 300),
+    product_slugs: JSON.stringify(slugs.map((s) => String(s).slice(0, 60)).slice(0, 4)),
+    published: body.published ? 1 : 0
+  };
+}
+
+app.get('/api/admin/posts', requireAdmin, (req, res) => {
+  res.json(db.prepare(`
+    SELECT p.*,
+      (SELECT COUNT(*) FROM pageviews pv WHERE pv.path = '/blog/' || p.slug) AS views
+    FROM posts p ORDER BY p.created_at DESC
+  `).all());
+});
+
+app.post('/api/admin/posts', requireAdmin, (req, res) => {
+  const f = postFields(req.body);
+  if (!f.title) return res.status(400).json({ error: 'Post title is required.' });
+  let base = slugify(f.title);
+  let slug = base, n = 2;
+  while (db.prepare('SELECT 1 FROM posts WHERE slug = ?').get(slug)) slug = `${base}-${n++}`;
+  db.prepare(`
+    INSERT INTO posts (slug, title, excerpt, content, cover, product_slugs, published)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(slug, f.title, f.excerpt, f.content, f.cover, f.product_slugs, f.published);
+  res.json({ ok: true, slug });
+});
+
+app.put('/api/admin/posts/:slug', requireAdmin, (req, res) => {
+  if (!db.prepare('SELECT 1 FROM posts WHERE slug = ?').get(req.params.slug)) return res.status(404).json({ error: 'Post not found.' });
+  const f = postFields(req.body);
+  if (!f.title) return res.status(400).json({ error: 'Post title is required.' });
+  db.prepare(`
+    UPDATE posts SET title = ?, excerpt = ?, content = ?, cover = ?, product_slugs = ?, published = ?, updated_at = datetime('now')
+    WHERE slug = ?
+  `).run(f.title, f.excerpt, f.content, f.cover, f.product_slugs, f.published, req.params.slug);
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/posts/:slug', requireAdmin, (req, res) => {
+  db.prepare('DELETE FROM posts WHERE slug = ?').run(req.params.slug);
   res.json({ ok: true });
 });
 
@@ -1110,9 +1215,10 @@ app.get('/api/admin/traffic', requireAdmin, (req, res) => {
   const conversion = views > 0 ? Math.round((orders / views) * 1000) / 10 : 0;
 
   const top_pages = db.prepare(`
-    SELECT p.path, COUNT(*) AS views, pr.name AS product_name
+    SELECT p.path, COUNT(*) AS views, COALESCE(pr.name, po.title) AS product_name
     FROM pageviews p
     LEFT JOIN products pr ON ('/product/' || pr.slug) = p.path
+    LEFT JOIN posts po ON ('/blog/' || po.slug) = p.path
     WHERE date(p.created_at) BETWEEN ? AND ?
     GROUP BY p.path ORDER BY views DESC LIMIT 15
   `).all(from, to);
@@ -1128,11 +1234,14 @@ app.get('/api/admin/traffic', requireAdmin, (req, res) => {
     GROUP BY a.id HAVING views > 0 ORDER BY views DESC LIMIT 15
   `).all(from, to);
   const affiliate_products = db.prepare(`
-    SELECT a.name AS affiliate_name, a.code, pv.path, pr.name AS product_name, COUNT(*) AS views
+    SELECT a.name AS affiliate_name, a.code, pv.path,
+           COALESCE(pr.name, '📝 ' || po.title) AS product_name, COUNT(*) AS views
     FROM pageviews pv
     JOIN affiliates a ON a.code = pv.ref
     LEFT JOIN products pr ON ('/product/' || pr.slug) = pv.path
-    WHERE pv.ref != '' AND pv.path LIKE '/product/%' AND date(pv.created_at) BETWEEN ? AND ?
+    LEFT JOIN posts po ON ('/blog/' || po.slug) = pv.path
+    WHERE pv.ref != '' AND (pv.path LIKE '/product/%' OR pv.path LIKE '/blog/%')
+      AND date(pv.created_at) BETWEEN ? AND ?
     GROUP BY a.code, pv.path ORDER BY views DESC LIMIT 50
   `).all(from, to);
   res.json({ from, to, total, views, orders, conversion, via_affiliate, top_pages, daily, by_affiliate, affiliate_products });
@@ -1268,6 +1377,44 @@ app.get('/product/:slug', async (req, res) => {
   })));
 });
 
+/* ---------- Blog pages (server-rendered meta) ---------- */
+app.get('/blog', async (req, res) => {
+  const src = siteOgSource();
+  const og = await ensureOgImage(src, 'home-' + baseNoExt(src));
+  res.type('html').send(renderPage('blog.html', buildMetaTags({
+    title: 'Patriot Blog — American Pride Store',
+    description: 'Stories, guides and news for true patriots — from the American Pride Store.',
+    url: absoluteUrl('/blog'), image: absoluteUrl(og || src), type: 'website'
+  })));
+});
+
+app.get('/blog/:slug', async (req, res) => {
+  const p = db.prepare('SELECT * FROM posts WHERE slug = ? AND published = 1').get(req.params.slug);
+  if (!p) {
+    return res.status(404).type('html').send(renderPage('post.html', buildMetaTags({
+      title: 'Post not found — American Pride Store',
+      description: 'This article is no longer available.',
+      url: absoluteUrl('/blog/' + req.params.slug), image: siteOgImage()
+    })));
+  }
+  const url = absoluteUrl('/blog/' + p.slug);
+  let og = await ensureOgImage(p.cover, 'post-' + p.slug + '-' + baseNoExt(p.cover));
+  if (!og) { const s = siteOgSource(); og = await ensureOgImage(s, 'home-' + baseNoExt(s)); }
+  const img = og ? absoluteUrl(og) : siteOgImage();
+  const desc = p.excerpt || p.title;
+  const jsonld = {
+    '@context': 'https://schema.org', '@type': 'BlogPosting',
+    headline: p.title, description: desc, image: [img],
+    datePublished: p.created_at, dateModified: p.updated_at || p.created_at,
+    author: { '@type': 'Organization', name: 'American Pride Store' },
+    mainEntityOfPage: url
+  };
+  res.type('html').send(renderPage('post.html', buildMetaTags({
+    title: `${p.title} — American Pride Store`,
+    description: desc, url, image: img, type: 'article', jsonld
+  })));
+});
+
 /* ---------- SEO: robots.txt + sitemap.xml ---------- */
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\n\nSitemap: ${absoluteUrl('/sitemap.xml')}\n`);
@@ -1275,8 +1422,11 @@ app.get('/robots.txt', (req, res) => {
 app.get('/sitemap.xml', (req, res) => {
   const base = currentDomain().replace(/\/+$/, '');
   const prods = db.prepare('SELECT slug FROM products WHERE active = 1').all();
+  const posts = db.prepare('SELECT slug FROM posts WHERE published = 1').all();
   let urls = `<url><loc>${base}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`;
+  urls += `<url><loc>${base}/blog</loc><changefreq>daily</changefreq><priority>0.7</priority></url>`;
   for (const p of prods) urls += `<url><loc>${base}/product/${p.slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+  for (const p of posts) urls += `<url><loc>${base}/blog/${p.slug}</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>`;
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
 });
 

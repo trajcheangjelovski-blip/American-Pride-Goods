@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-BW6YRG2MGX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-BW6YRG2MGX');
+  </script>
+  <!--META-->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇺🇸</text></svg>" />
+</head>
+<body>
+
+  <header class="navbar scrolled" id="navbar">
+    <div class="nav-inner">
+      <a href="/" class="logo">
+        <span class="logo-star">★</span>
+        <span class="logo-text">AMERICAN<em>PRIDE</em></span>
+      </a>
+      <nav class="nav-links">
+        <a href="/#shop">Shop</a>
+        <a href="/blog" style="color:var(--white)">Blog</a>
+        <a href="/#reviews">Reviews</a>
+      </nav>
+      <button class="cart-btn" id="cart-btn" aria-label="Open cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cart-count" id="cart-count">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="post-wrap" id="post-wrap">
+    <p class="blog-loading">Loading…</p>
+  </main>
+
+  <section class="blog-wrap" id="more-wrap" style="display:none;padding-top:0">
+    <div class="section-head" style="margin-bottom:34px"><h2 style="font-size:1.6rem">More from the <span class="text-gradient">Blog</span></h2></div>
+    <div class="blog-grid" id="more-grid"></div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-bottom">© 2026 American Pride Store. All rights reserved. 🇺🇸</div>
+  </footer>
+
+  <!-- Cart drawer (shared) -->
+  <div class="cart-overlay" id="cart-overlay"></div>
+  <aside class="cart-drawer" id="cart-drawer" aria-label="Shopping cart">
+    <div class="cart-head">
+      <h3>Your Cart <span id="cart-head-count"></span></h3>
+      <button class="cart-close" id="cart-close" aria-label="Close cart">✕</button>
+    </div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-foot">
+      <div class="cart-total-row">
+        <span>Total</span>
+        <span class="cart-total" id="cart-total">$0.00</span>
+      </div>
+      <p class="cart-note">Shipping &amp; taxes calculated at checkout</p>
+      <button class="btn btn-primary btn-checkout" id="checkout-btn">
+        <span id="checkout-label">SECURE CHECKOUT 🔒</span>
+      </button>
+      <p class="cart-error" id="cart-error"></p>
+    </div>
+  </aside>
+
+  <div class="toast" id="toast">Added to cart! 🇺🇸</div>
+
+  <script src="/app.js"></script>
+  <script>
+  (async function () {
+    const slug = location.pathname.split('/').pop();
+    const wrap = document.getElementById('post-wrap');
+    const ref = (window.getRef && getRef()) || '';
+    const q = ref ? '?ref=' + encodeURIComponent(ref) : '';
+    try {
+      const res = await fetch('/api/post/' + encodeURIComponent(slug) + q);
+      if (!res.ok) throw new Error('not found');
+      const { post: p, ads, more } = await res.json();
+      document.title = p.title + ' — American Pride Store';
+
+      wrap.innerHTML = `
+        <nav class="pdp-crumbs"><a href="/">Home</a> <span>›</span> <a href="/blog${q}">Blog</a> <span>›</span> <b>${esc(p.title)}</b></nav>
+        <article class="post-article">
+          ${p.cover ? `<div class="post-hero-img"><img src="${esc(p.cover)}" alt="${esc(p.title)}" /></div>` : ''}
+          <h1 class="post-title">${esc(p.title)}</h1>
+          <div class="post-meta">🇺🇸 American Pride Store · ${new Date(p.created_at.replace(' ', 'T') + 'Z').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+          <div class="post-content" id="post-content"></div>
+        </article>`;
+
+      // Render the article body, then inject product ads mid-content
+      // (the classic "inline product embed" pattern from WordPress/Shopify blogs).
+      const contentEl = document.getElementById('post-content');
+      contentEl.innerHTML = p.content || '';
+      const blocks = () => [...contentEl.children].filter((el) => !el.classList.contains('post-ad'));
+
+      function adCard(prod) {
+        const sale = window.onSale(prod);
+        const price = sale
+          ? `<span class="ad-price">$${(prod.sale_price / 100).toFixed(2)}</span> <span class="ad-price-old">$${(prod.price / 100).toFixed(2)}</span>`
+          : `<span class="ad-price">$${(prod.price / 100).toFixed(2)}</span>`;
+        const hasOptions = (prod.options || []).length > 0;
+        const el = document.createElement('aside');
+        el.className = 'post-ad';
+        el.innerHTML = `
+          <span class="ad-tag">★ FEATURED GEAR</span>
+          <a class="ad-img" href="/product/${esc(prod.slug)}${q}"><img src="${esc(prod.image)}" alt="${esc(prod.name)}" loading="lazy" /></a>
+          <div class="ad-body">
+            <h4><a href="/product/${esc(prod.slug)}${q}">${esc(prod.name)}</a></h4>
+            <p>${esc(prod.description || '')}</p>
+            <div class="ad-row">
+              ${price}
+              ${hasOptions
+                ? `<a class="btn btn-primary ad-btn" href="/product/${esc(prod.slug)}${q}">CHOOSE OPTIONS</a>`
+                : `<button class="btn btn-primary ad-btn" onclick="addToCart('${esc(prod.slug)}')">ADD TO CART</button>
+                   <button class="btn btn-gold ad-btn" onclick="buyNow('${esc(prod.slug)}', this)">BUY NOW ${window.LOCK || ''}</button>`}
+            </div>
+          </div>`;
+        return el;
+      }
+
+      if (ads && ads.length) {
+        const b = blocks();
+        if (b.length >= 2) {
+          const mid = b[Math.floor(b.length / 2) - (b.length % 2 === 0 ? 1 : 0)];
+          mid.after(adCard(ads[0]));
+        } else {
+          contentEl.appendChild(adCard(ads[0]));
+        }
+        if (ads[1]) contentEl.appendChild(adCard(ads[1]));
+      }
+
+      if (more && more.length) {
+        document.getElementById('more-wrap').style.display = '';
+        document.getElementById('more-grid').innerHTML = more.map((m) => `
+          <a class="post-card" href="/blog/${esc(m.slug)}${q}">
+            <div class="post-cover">${m.cover ? `<img src="${esc(m.cover)}" alt="${esc(m.title)}" loading="lazy" />` : '<span class="post-cover-fallback">★</span>'}</div>
+            <div class="post-info">
+              <span class="post-date">${new Date(m.created_at.replace(' ', 'T') + 'Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</span>
+              <h3>${esc(m.title)}</h3>
+              <span class="post-more">Read article →</span>
+            </div>
+          </a>`).join('');
+      }
+    } catch {
+      wrap.innerHTML = '<p class="blog-loading">Article not found. <a href="/blog" style="color:var(--gold-300)">Back to the blog →</a></p>';
+    }
+  })();
+  </script>
+</body>
+</html>
