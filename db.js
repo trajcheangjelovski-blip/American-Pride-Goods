@@ -115,6 +115,16 @@ db.exec(`
     created_at   TEXT DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS contact_messages (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    name          TEXT DEFAULT '',
+    email         TEXT DEFAULT '',
+    subject       TEXT DEFAULT '',
+    body          TEXT DEFAULT '',
+    read_by_admin INTEGER DEFAULT 0,
+    created_at    TEXT DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS contact_requests (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     name       TEXT DEFAULT '',

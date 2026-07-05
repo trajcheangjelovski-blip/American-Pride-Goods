@@ -1417,3 +1417,61 @@ section { padding: 110px 24px; }
   .post-ad { flex-direction: column; text-align: center; }
   .ad-row { justify-content: center; }
 }
+
+/* ============================================================
+   CONTACT PAGE
+   ============================================================ */
+.contact-wrap { max-width: 1100px; margin: 0 auto; padding: 140px 24px 100px; min-height: 70vh; }
+.contact-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 60px; align-items: start; }
+.contact-pitch h1 { font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3rem); line-height: 1.08; margin: 14px 0 18px; }
+.contact-sub { color: var(--grey-300); font-size: 1.05rem; line-height: 1.7; margin-bottom: 30px; }
+.contact-points { display: flex; flex-direction: column; gap: 18px; }
+.cpoint { display: flex; gap: 14px; align-items: flex-start; }
+.cpoint .ico { font-size: 1.5rem; }
+.cpoint b { display: block; font-size: 0.98rem; }
+.cpoint span:not(.ico) { color: var(--grey-400); font-size: 0.88rem; }
+.cpoint a { color: var(--gold-300); }
+
+.contact-card {
+  padding: 36px 32px;
+  border-radius: 24px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  animation: pdpFloatIn 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.contact-card label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey-400);
+  margin: 16px 0 7px;
+}
+.contact-card input, .contact-card textarea {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 13px 16px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  resize: vertical;
+}
+.contact-card input:focus, .contact-card textarea:focus { border-color: var(--gold-400); }
+.cf-row { display: flex; gap: 16px; }
+.cf-err { color: var(--red-400); font-size: 0.85rem; min-height: 1.2em; margin-top: 10px; }
+.cf-ok { text-align: center; padding: 30px 10px; }
+.cf-ok .big { font-size: 3rem; display: block; margin-bottom: 12px; }
+.cf-ok b { font-size: 1.2rem; display: block; margin-bottom: 8px; }
+.cf-ok p { color: var(--grey-400); line-height: 1.6; }
+
+@media (max-width: 820px) {
+  .contact-wrap { padding: 110px 18px 60px; }
+  .contact-grid { grid-template-columns: 1fr; gap: 36px; }
+  .cf-row { flex-direction: column; gap: 0; }
+}

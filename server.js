@@ -598,6 +598,19 @@ app.post('/api/affiliate/contact', (req, res) => {
   res.json({ ok: true });
 });
 
+// "Contact us" form on the storefront → lands in Admin → Messages.
+app.post('/api/contact', (req, res) => {
+  const name = String(req.body.name || '').trim().slice(0, 80);
+  const email = String(req.body.email || '').trim().slice(0, 120);
+  const subject = String(req.body.subject || '').trim().slice(0, 160);
+  const body = String(req.body.body || '').trim().slice(0, 3000);
+  if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !body) {
+    return res.status(400).json({ error: 'Please enter your name, a valid email and a message.' });
+  }
+  db.prepare('INSERT INTO contact_messages (name, email, subject, body) VALUES (?, ?, ?, ?)').run(name, email, subject, body);
+  res.json({ ok: true });
+});
+
 app.post('/api/affiliate/login', (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
@@ -855,6 +868,7 @@ app.get('/api/admin/summary', requireAdmin, (req, res) => {
     affiliates: db.prepare('SELECT COUNT(*) AS c FROM affiliates').get().c,
     pending_affiliates: db.prepare("SELECT COUNT(*) AS c FROM affiliates WHERE status = 'pending'").get().c,
     unread_messages: db.prepare("SELECT COUNT(*) AS c FROM messages WHERE sender = 'affiliate' AND read_by_admin = 0").get().c,
+    unread_contact: db.prepare('SELECT COUNT(*) AS c FROM contact_messages WHERE read_by_admin = 0').get().c,
     new_requests: db.prepare('SELECT COUNT(*) AS c FROM contact_requests WHERE handled = 0').get().c,
     pending_payouts: db.prepare("SELECT COALESCE(SUM(amount),0) AS s FROM payouts WHERE status = 'pending'").get().s,
     recent_orders: db.prepare(`
@@ -1298,6 +1312,19 @@ app.delete('/api/admin/contact-requests/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+/* ---------- Contact messages (admin side) ---------- */
+app.get('/api/admin/contact-messages', requireAdmin, (req, res) => {
+  res.json(db.prepare('SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT 300').all());
+});
+app.put('/api/admin/contact-messages/:id/read', requireAdmin, (req, res) => {
+  db.prepare('UPDATE contact_messages SET read_by_admin = 1 WHERE id = ?').run(Number(req.params.id));
+  res.json({ ok: true });
+});
+app.delete('/api/admin/contact-messages/:id', requireAdmin, (req, res) => {
+  db.prepare('DELETE FROM contact_messages WHERE id = ?').run(Number(req.params.id));
+  res.json({ ok: true });
+});
+
 /* ---------- Messaging (admin side) ---------- */
 app.get('/api/admin/messages', requireAdmin, (req, res) => {
   // One row per affiliate that has a conversation, newest activity first.
@@ -1415,6 +1442,16 @@ app.get('/blog/:slug', async (req, res) => {
   })));
 });
 
+app.get('/contact', async (req, res) => {
+  const src = siteOgSource();
+  const og = await ensureOgImage(src, 'home-' + baseNoExt(src));
+  res.type('html').send(renderPage('contact.html', buildMetaTags({
+    title: 'Contact Us — American Pride Store',
+    description: 'Questions about an order, shipping or our gear? Send us a message — we usually reply within 24 hours.',
+    url: absoluteUrl('/contact'), image: absoluteUrl(og || src), type: 'website'
+  })));
+});
+
 /* ---------- SEO: robots.txt + sitemap.xml ---------- */
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\n\nSitemap: ${absoluteUrl('/sitemap.xml')}\n`);
@@ -1425,6 +1462,7 @@ app.get('/sitemap.xml', (req, res) => {
   const posts = db.prepare('SELECT slug FROM posts WHERE published = 1').all();
   let urls = `<url><loc>${base}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`;
   urls += `<url><loc>${base}/blog</loc><changefreq>daily</changefreq><priority>0.7</priority></url>`;
+  urls += `<url><loc>${base}/contact</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>`;
   for (const p of prods) urls += `<url><loc>${base}/product/${p.slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
   for (const p of posts) urls += `<url><loc>${base}/blog/${p.slug}</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>`;
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);

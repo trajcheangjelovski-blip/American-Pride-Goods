@@ -195,6 +195,11 @@
     .msg.theirs { align-self: flex-start; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-bottom-left-radius: 4px; }
     .msg-compose { display: flex; gap: 10px; padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.08); }
     .msg-compose input { flex: 1; }
+    .thread-group { padding: 12px 16px 6px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; color: var(--gold-400); text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .contact-view { align-self: stretch; max-width: none; }
+    .contact-view .cv-row { font-size: 0.88rem; color: var(--grey-300); margin-bottom: 8px; }
+    .contact-view .cv-k { display: inline-block; min-width: 64px; color: var(--grey-400); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .contact-view .cv-body { margin-top: 14px; padding: 16px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); line-height: 1.65; font-size: 0.92rem; white-space: pre-wrap; }
     @media (max-width: 760px) { .msg-layout { grid-template-columns: 1fr; } }
     .payout-info-box { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: rgba(245,197,66,0.08); border: 1px solid rgba(245,197,66,0.25); font-size: 0.82rem; color: var(--gold-300); white-space: pre-wrap; line-height: 1.5; display: none; }
     .payout-info-box.show { display: block; }
@@ -772,7 +777,8 @@
       badge.style.display = s.pending_affiliates ? '' : 'none';
       badge.textContent = s.pending_affiliates;
       const mb = $('#msg-nav-badge');
-      if (s.unread_messages > 0) { mb.textContent = s.unread_messages; mb.style.display = ''; }
+      const unreadTotal = (s.unread_messages || 0) + (s.unread_contact || 0);
+      if (unreadTotal > 0) { mb.textContent = unreadTotal; mb.style.display = ''; }
       else mb.style.display = 'none';
       const rb = $('#req-nav-badge');
       if (s.new_requests > 0) { rb.textContent = s.new_requests; rb.style.display = ''; }
@@ -974,16 +980,61 @@
 
     /* ---------- messaging ---------- */
     let currentThread = null;
+    let CONTACTS = [];
     async function loadThreads() {
-      const threads = await api('messages');
-      $('#msg-threads').innerHTML = threads.length
+      const [threads, contacts] = await Promise.all([api('messages'), api('contact-messages')]);
+      CONTACTS = contacts;
+      let html = '';
+      if (contacts.length) {
+        html += '<div class="thread-group">📬 Website messages</div>';
+        html += contacts.map((c) => `
+          <button class="thread-item" onclick="openContact(${c.id})">
+            ${c.read_by_admin ? '' : '<span class="un">1</span>'}
+            <b>${esc(c.name)}</b>
+            <div class="preview">${esc(c.subject || c.body)}</div>
+          </button>`).join('');
+      }
+      html += '<div class="thread-group">🤝 Affiliates</div>';
+      html += threads.length
         ? threads.map((t) => `
           <button class="thread-item ${currentThread === t.affiliate_id ? 'active' : ''}" onclick="openThread(${t.affiliate_id}, '${esc(t.name).replace(/'/g, "\\'")}')">
             ${t.unread ? `<span class="un">${t.unread}</span>` : ''}
             <b>${esc(t.name)}</b>
             <div class="preview">${esc(t.last_body || '')}</div>
           </button>`).join('')
-        : '<p class="empty">No messages from affiliates yet.</p>';
+        : '<p class="empty" style="padding:16px">No affiliate messages yet.</p>';
+      $('#msg-threads').innerHTML = html;
+    }
+
+    async function openContact(id) {
+      const c = CONTACTS.find((x) => x.id === id);
+      if (!c) return;
+      currentThread = null;
+      $('#msg-conv-head').textContent = 'Message from ' + c.name;
+      $('#admin-msg-form').style.display = 'none'; // visitors aren't logged in — reply by email
+      $('#admin-msg-thread').innerHTML = `
+        <div class="contact-view">
+          <div class="cv-row"><span class="cv-k">From</span> <b>${esc(c.name)}</b> · <a href="mailto:${esc(c.email)}" style="color:var(--gold-300)">${esc(c.email)}</a></div>
+          ${c.subject ? `<div class="cv-row"><span class="cv-k">Subject</span> <b>${esc(c.subject)}</b></div>` : ''}
+          <div class="cv-row"><span class="cv-k">Date</span> ${c.created_at.slice(0, 16)}</div>
+          <div class="cv-body">${esc(c.body)}</div>
+          <div class="row-actions" style="margin-top:16px">
+            <a class="btn btn-red btn-sm" href="mailto:${esc(c.email)}?subject=${encodeURIComponent('Re: ' + (c.subject || 'Your message to American Pride Store'))}">✉️ Reply by email</a>
+            <button class="btn btn-danger btn-sm" onclick="deleteContactMsg(${c.id})">Delete</button>
+          </div>
+        </div>`;
+      if (!c.read_by_admin) {
+        try { await api('contact-messages/' + id + '/read', 'PUT', {}); c.read_by_admin = 1; loadThreads(); loadDashboard(); } catch {}
+      }
+    }
+    async function deleteContactMsg(id) {
+      if (!confirm('Delete this message?')) return;
+      try {
+        await api('contact-messages/' + id, 'DELETE');
+        $('#admin-msg-thread').innerHTML = '<p class="empty">Message deleted.</p>';
+        $('#msg-conv-head').textContent = 'Select a conversation';
+        loadThreads(); loadDashboard();
+      } catch (err) { toast(err.message, true); }
     }
     async function openThread(id, name) {
       currentThread = id;
