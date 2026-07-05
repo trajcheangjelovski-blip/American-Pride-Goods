@@ -115,15 +115,27 @@ async function ensureOgImage(publicImagePath, cacheName) {
     if (!fs.existsSync(OG_DIR)) fs.mkdirSync(OG_DIR, { recursive: true });
     const safe = cacheName.replace(/[^a-z0-9._-]/gi, '_').slice(0, 100);
     // JPEG: ~5x smaller than PNG so WhatsApp/Messenger never skip it (their
-    // preview limit is ~600KB), and the .jpg URL busts caches of the old .png.
-    const outAbs = path.join(OG_DIR, safe + '.jpg');
-    const outPublic = '/images/og-cache/' + safe + '.jpg';
+    // preview limit is ~600KB). Bump the style version to bust scraper caches
+    // whenever the banner design changes.
+    const OG_STYLE = 'v2';
+    const outAbs = path.join(OG_DIR, `${safe}-${OG_STYLE}.jpg`);
+    const outPublic = `/images/og-cache/${safe}-${OG_STYLE}.jpg`;
     // (re)generate if missing or older than the source image
     if (!fs.existsSync(outAbs) || fs.statSync(outAbs).mtimeMs < fs.statSync(srcAbs).mtimeMs) {
-      await sharp(srcAbs)
-        .resize(1000, 520, { fit: 'contain', background: { r: 10, g: 18, b: 40, alpha: 0 } })
-        .extend({ top: 55, bottom: 55, left: 100, right: 100, background: { r: 10, g: 18, b: 40, alpha: 1 } })
-        .flatten({ background: { r: 10, g: 18, b: 40 } })
+      const NAVY = { r: 10, g: 18, b: 40 };
+      // Blur-fill: background is the photo itself scaled to cover the full
+      // 1200x630 and blurred, so portrait/dark photos never leave dead bars.
+      const bg = await sharp(srcAbs)
+        .flatten({ background: NAVY })
+        .resize(1200, 630, { fit: 'cover' })
+        .blur(30)
+        .modulate({ brightness: 0.55, saturation: 0.9 })
+        .toBuffer();
+      const fg = await sharp(srcAbs)
+        .resize(1080, 566, { fit: 'inside' })
+        .toBuffer();
+      await sharp(bg)
+        .composite([{ input: fg, gravity: 'centre' }])
         .jpeg({ quality: 84, mozjpeg: true })
         .toFile(outAbs);
     }
