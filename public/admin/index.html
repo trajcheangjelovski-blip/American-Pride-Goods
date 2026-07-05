@@ -169,6 +169,14 @@
     .day-bar { width: 100%; max-width: 52px; border-radius: 8px 8px 0 0; background: linear-gradient(180deg, var(--red-400), #b00e20); min-height: 4px; transition: height 0.6s cubic-bezier(0.22,1,0.36,1); position: relative; }
     .day-bar .n { position: absolute; top: -20px; left: 0; right: 0; text-align: center; font-size: 0.72rem; font-weight: 800; color: var(--gold-300); }
     .day-label { font-size: 0.68rem; color: var(--grey-400); font-weight: 700; }
+    .period-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .pbtn { padding: 8px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); color: var(--grey-300); font-weight: 700; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; }
+    .pbtn:hover { color: var(--white); }
+    .pbtn.active { background: linear-gradient(100deg, var(--red-500), #b00e20); border-color: transparent; color: #fff; }
+    .period-custom { display: none; align-items: center; gap: 6px; }
+    .period-custom.on { display: flex; }
+    .period-custom input[type=date] { width: auto; padding: 7px 10px; }
+    .period-label { color: var(--grey-400); font-size: 0.82rem; margin-left: auto; }
     @media (max-width: 760px) { .traffic-cols { grid-template-columns: 1fr !important; } }
     .msg-layout { display: grid; grid-template-columns: 300px 1fr; gap: 18px; }
     .msg-threads { max-height: 560px; overflow-y: auto; }
@@ -303,9 +311,20 @@
       <!-- TRAFFIC -->
       <section id="view-traffic" style="display:none">
         <div class="page-head"><h2>Traffic &amp; clicks</h2></div>
+        <div class="period-bar" id="traffic-period">
+          <button class="pbtn" data-p="today">Today</button>
+          <button class="pbtn" data-p="yesterday">Yesterday</button>
+          <button class="pbtn active" data-p="7d">Last 7 days</button>
+          <button class="pbtn" data-p="custom">Custom</button>
+          <span class="period-custom" id="traffic-custom">
+            <input type="date" id="tp-from" /> <span>→</span> <input type="date" id="tp-to" />
+            <button class="btn btn-red btn-sm" id="tp-apply">Apply</button>
+          </span>
+          <span class="period-label" id="traffic-label"></span>
+        </div>
         <div class="stat-cards" id="traffic-cards"></div>
         <div class="panel" style="margin-bottom:22px">
-          <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">Views — last 7 days</h3>
+          <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)" id="chart-title">Views per day</h3>
           <div class="daily-chart" id="daily-chart"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" class="traffic-cols">
@@ -796,24 +815,38 @@
     });
 
     /* ---------- traffic / analytics ---------- */
-    async function loadTraffic() {
-      const t = await api('traffic');
-      $('#traffic-cards').innerHTML = `
-        <div class="stat-card"><div class="k">Total views</div><div class="v">${t.total.toLocaleString('en-US')}</div></div>
-        <div class="stat-card"><div class="k">Views today</div><div class="v gold">${t.today.toLocaleString('en-US')}</div></div>
-        <div class="stat-card"><div class="k">Last 7 days</div><div class="v">${t.week.toLocaleString('en-US')}</div></div>
-        <div class="stat-card"><div class="k">Via affiliate links</div><div class="v green">${t.via_affiliate.toLocaleString('en-US')}</div></div>
-        <div class="stat-card"><div class="k">Conversion (views → orders)</div><div class="v gold">${t.conversion}%</div><div class="muted" style="font-size:0.72rem;margin-top:4px">${t.orders} order(s) from ${t.total.toLocaleString('en-US')} views</div></div>`;
+    // --- shared period helpers (also used by the daily chart) ---
+    function utmd(offsetDays) { return new Date(Date.now() - offsetDays * 864e5).toISOString().slice(0, 10); }
+    function periodRange(p) {
+      if (p === 'today') return { from: utmd(0), to: utmd(0) };
+      if (p === 'yesterday') return { from: utmd(1), to: utmd(1) };
+      if (p === '7d') return { from: utmd(6), to: utmd(0) };
+      return null;
+    }
+    function eachDay(from, to) {
+      const out = []; const d = new Date(from + 'T00:00:00Z'); const end = new Date(to + 'T00:00:00Z');
+      let guard = 0;
+      while (d <= end && guard++ < 400) { out.push(d.toISOString().slice(0, 10)); d.setUTCDate(d.getUTCDate() + 1); }
+      return out;
+    }
+    function fmtDay(key) { return new Date(key + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }); }
 
-      // Build a 7-day chart, filling any days with no views.
+    let trafficPeriod = { from: utmd(6), to: utmd(0) };
+    async function loadTraffic() {
+      const { from, to } = trafficPeriod;
+      const t = await api('traffic?from=' + from + '&to=' + to);
+      $('#traffic-label').textContent = from === to ? from : `${from} → ${to}`;
+      $('#chart-title').textContent = 'Views per day (' + (from === to ? from : from + ' → ' + to) + ')';
+      $('#traffic-cards').innerHTML = `
+        <div class="stat-card"><div class="k">Views (period)</div><div class="v gold">${t.views.toLocaleString('en-US')}</div></div>
+        <div class="stat-card"><div class="k">Orders (period)</div><div class="v">${t.orders.toLocaleString('en-US')}</div></div>
+        <div class="stat-card"><div class="k">Conversion (period)</div><div class="v gold">${t.conversion}%</div></div>
+        <div class="stat-card"><div class="k">Via affiliate links</div><div class="v green">${t.via_affiliate.toLocaleString('en-US')}</div></div>
+        <div class="stat-card"><div class="k">Total views (all time)</div><div class="v">${t.total.toLocaleString('en-US')}</div></div>`;
+
       const byDay = {};
       t.daily.forEach((d) => { byDay[d.day] = d.views; });
-      const days = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
-        const key = d.toISOString().slice(0, 10);
-        days.push({ key, label: d.toLocaleDateString('en-US', { weekday: 'short' }), views: byDay[key] || 0 });
-      }
+      const days = eachDay(from, to).map((key) => ({ key, label: fmtDay(key), views: byDay[key] || 0 }));
       const max = Math.max(1, ...days.map((d) => d.views));
       $('#daily-chart').innerHTML = days.map((d) => `
         <div class="day-col">
@@ -839,6 +872,25 @@
           }).join('')
         : '<tr><td colspan="3" class="empty">No affiliate clicks on product pages yet.</td></tr>';
     }
+
+    (function initTrafficPeriod() {
+      const bar = $('#traffic-period');
+      bar.querySelectorAll('.pbtn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          bar.querySelectorAll('.pbtn').forEach((b) => b.classList.toggle('active', b === btn));
+          if (btn.dataset.p === 'custom') { $('#traffic-custom').classList.add('on'); return; }
+          $('#traffic-custom').classList.remove('on');
+          trafficPeriod = periodRange(btn.dataset.p);
+          loadTraffic();
+        });
+      });
+      $('#tp-apply').addEventListener('click', () => {
+        const f = $('#tp-from').value, t = $('#tp-to').value;
+        if (!f || !t) { toast('Pick both dates', true); return; }
+        trafficPeriod = { from: f <= t ? f : t, to: f <= t ? t : f };
+        loadTraffic();
+      });
+    })();
 
     /* ---------- messaging ---------- */
     let currentThread = null;

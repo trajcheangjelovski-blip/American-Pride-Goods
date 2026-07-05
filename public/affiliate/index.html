@@ -108,6 +108,16 @@
     .msg-compose { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
     .msg-compose input { flex: 1; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    .period-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .pbtn { padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); color: var(--grey-300); font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+    .pbtn.active { background: linear-gradient(100deg, var(--red-500), #b00e20); border-color: transparent; color: #fff; }
+    .period-custom { display: none; align-items: center; gap: 6px; }
+    .period-custom.on { display: flex; }
+    .period-custom input[type=date] { width: auto; padding: 6px 9px; }
+    .period-sum { display: flex; gap: 22px; flex-wrap: wrap; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .period-sum .k { color: var(--grey-400); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .period-sum .v { font-family: 'Archivo Black'; font-size: 1.15rem; }
+    .period-sum .v.gold { color: var(--gold-300); }
     .asset-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
     .asset { border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.03); }
     .asset-img { aspect-ratio: 16 / 10; background: radial-gradient(ellipse, rgba(30,63,160,0.3), rgba(6,11,26,0.4)); display: grid; place-items: center; }
@@ -217,7 +227,18 @@
         </div>
         <div class="stat-cards" id="aff-stats"></div>
         <div class="panel">
-          <h3>Your clicks by product</h3>
+          <h3>Your traffic &amp; clicks</h3>
+          <div class="period-bar" id="aff-period">
+            <button class="pbtn" data-p="today">Today</button>
+            <button class="pbtn" data-p="yesterday">Yesterday</button>
+            <button class="pbtn active" data-p="7d">Last 7 days</button>
+            <button class="pbtn" data-p="custom">Custom</button>
+            <span class="period-custom" id="aff-custom">
+              <input type="date" id="ap-from" /> <span>→</span> <input type="date" id="ap-to" />
+              <button class="btn btn-red" id="ap-apply" style="padding:7px 14px;font-size:0.78rem">Apply</button>
+            </span>
+          </div>
+          <div class="period-sum" id="aff-period-sum"></div>
           <div class="table-scroll"><table><thead><tr><th>Product</th><th>Clicks</th></tr></thead><tbody id="aff-clicks"></tbody></table></div>
         </div>
         <div class="panel">
@@ -425,17 +446,45 @@
 
       setupProductLinks();
       loadPayouts();
-      loadClicks();
+      loadAffStats();
     }
 
-    async function loadClicks() {
+    /* ---- period-filtered traffic & clicks ---- */
+    function utmd(o) { return new Date(Date.now() - o * 864e5).toISOString().slice(0, 10); }
+    let affPeriod = { from: utmd(6), to: utmd(0) };
+    async function loadAffStats() {
       try {
-        const rows = await api('/api/affiliate/clicks');
-        $('#aff-clicks').innerHTML = rows.length
-          ? rows.map((r) => `<tr><td>${esc(r.product_name || r.path)}</td><td><b>${r.views}</b></td></tr>`).join('')
-          : '<tr><td colspan="2" class="empty">No product clicks yet — share your links! 🔗</td></tr>';
+        const s = await api('/api/affiliate/stats?from=' + affPeriod.from + '&to=' + affPeriod.to);
+        $('#aff-period-sum').innerHTML = `
+          <div><div class="k">Clicks</div><div class="v gold">${s.views.toLocaleString('en-US')}</div></div>
+          <div><div class="k">Orders</div><div class="v">${s.orders.toLocaleString('en-US')}</div></div>
+          <div><div class="k">Conversion</div><div class="v gold">${s.conversion}%</div></div>
+          <div><div class="k">Sales</div><div class="v">${fmt(s.sales)}</div></div>
+          <div><div class="k">Earned</div><div class="v" style="color:var(--green)">${fmt(s.earned)}</div></div>`;
+        $('#aff-clicks').innerHTML = s.by_product.length
+          ? s.by_product.map((r) => `<tr><td>${esc(r.product_name || r.path)}</td><td><b>${r.views}</b></td></tr>`).join('')
+          : '<tr><td colspan="2" class="empty">No clicks in this period — share your links! 🔗</td></tr>';
       } catch {}
     }
+    (function initAffPeriod() {
+      const bar = $('#aff-period');
+      bar.querySelectorAll('.pbtn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          bar.querySelectorAll('.pbtn').forEach((b) => b.classList.toggle('active', b === btn));
+          const p = btn.dataset.p;
+          if (p === 'custom') { $('#aff-custom').classList.add('on'); return; }
+          $('#aff-custom').classList.remove('on');
+          affPeriod = p === 'today' ? { from: utmd(0), to: utmd(0) } : p === 'yesterday' ? { from: utmd(1), to: utmd(1) } : { from: utmd(6), to: utmd(0) };
+          loadAffStats();
+        });
+      });
+      $('#ap-apply').addEventListener('click', () => {
+        const f = $('#ap-from').value, t = $('#ap-to').value;
+        if (!f || !t) { toast('Pick both dates'); return; }
+        affPeriod = { from: f <= t ? f : t, to: f <= t ? t : f };
+        loadAffStats();
+      });
+    })();
 
     /* ---- my pricing ---- */
     async function loadPricing() {

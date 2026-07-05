@@ -72,6 +72,18 @@ function siteOgSource() {
   return (row && row.image) ? row.image : '/images/og-cover.svg';
 }
 const baseNoExt = (p) => path.basename(p || '').replace(/\.[^.]+$/, '');
+
+// Parse ?from=YYYY-MM-DD&to=YYYY-MM-DD for stats; default = last 7 days.
+function dateRange(req) {
+  const re = /^\d{4}-\d{2}-\d{2}$/;
+  const q = req.query || {};
+  if (re.test(q.from) && re.test(q.to)) {
+    return q.from <= q.to ? { from: q.from, to: q.to } : { from: q.to, to: q.from };
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  const from = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10);
+  return { from, to: today };
+}
 function buildMetaTags({ title, description, url, image, type = 'website', jsonld, extra = '' }) {
   const t = htmlEscape(title);
   const d = htmlEscape(String(description || '').replace(/\s+/g, ' ').trim().slice(0, 300));
@@ -656,6 +668,23 @@ app.get('/api/affiliate/clicks', requireAffiliate, (req, res) => {
   res.json(rows);
 });
 
+// Period-filtered stats for the affiliate (Today / Yesterday / 7 days / custom)
+app.get('/api/affiliate/stats', requireAffiliate, (req, res) => {
+  const { from, to } = dateRange(req);
+  const code = req.affiliate.code;
+  const id = req.affiliate.id;
+  const views = db.prepare('SELECT COUNT(*) AS c FROM pageviews WHERE ref = ? AND date(created_at) BETWEEN ? AND ?').get(code, from, to).c;
+  const o = db.prepare('SELECT COUNT(*) AS orders, COALESCE(SUM(amount_total),0) AS sales, COALESCE(SUM(commission),0) AS earned FROM orders WHERE affiliate_id = ? AND date(created_at) BETWEEN ? AND ?').get(id, from, to);
+  const conversion = views > 0 ? Math.round((o.orders / views) * 1000) / 10 : 0;
+  const by_product = db.prepare(`
+    SELECT pv.path, pr.name AS product_name, COUNT(*) AS views
+    FROM pageviews pv LEFT JOIN products pr ON ('/product/' || pr.slug) = pv.path
+    WHERE pv.ref = ? AND pv.path LIKE '/product/%' AND date(pv.created_at) BETWEEN ? AND ?
+    GROUP BY pv.path ORDER BY views DESC LIMIT 100
+  `).all(code, from, to);
+  res.json({ from, to, views, orders: o.orders, sales: o.sales, earned: o.earned, conversion, by_product });
+});
+
 // Marketing assets the affiliate can download / copy
 app.get('/api/affiliate/marketing', requireAffiliate, (req, res) => {
   res.json(db.prepare(`
@@ -1071,38 +1100,42 @@ app.delete('/api/admin/marketing/:id', requireAdmin, (req, res) => {
 
 /* ---------- Traffic / analytics ---------- */
 app.get('/api/admin/traffic', requireAdmin, (req, res) => {
-  const total = db.prepare('SELECT COUNT(*) AS c FROM pageviews').get().c;
-  const today = db.prepare("SELECT COUNT(*) AS c FROM pageviews WHERE created_at >= date('now')").get().c;
-  const week = db.prepare("SELECT COUNT(*) AS c FROM pageviews WHERE created_at >= date('now','-6 days')").get().c;
-  const via_affiliate = db.prepare("SELECT COUNT(*) AS c FROM pageviews WHERE ref != ''").get().c;
-  const orders = db.prepare('SELECT COUNT(*) AS c FROM orders').get().c;
-  const conversion = total > 0 ? Math.round((orders / total) * 1000) / 10 : 0; // % of views that became orders
+  const { from, to } = dateRange(req);
+  const R = 'date(created_at) BETWEEN ? AND ?'; // range clause on pageviews/orders
+
+  const total = db.prepare('SELECT COUNT(*) AS c FROM pageviews').get().c; // all-time
+  const views = db.prepare(`SELECT COUNT(*) AS c FROM pageviews WHERE ${R}`).get(from, to).c;
+  const via_affiliate = db.prepare(`SELECT COUNT(*) AS c FROM pageviews WHERE ${R} AND ref != ''`).get(from, to).c;
+  const orders = db.prepare(`SELECT COUNT(*) AS c FROM orders WHERE ${R}`).get(from, to).c;
+  const conversion = views > 0 ? Math.round((orders / views) * 1000) / 10 : 0;
+
   const top_pages = db.prepare(`
     SELECT p.path, COUNT(*) AS views, pr.name AS product_name
     FROM pageviews p
     LEFT JOIN products pr ON ('/product/' || pr.slug) = p.path
+    WHERE date(p.created_at) BETWEEN ? AND ?
     GROUP BY p.path ORDER BY views DESC LIMIT 15
-  `).all();
+  `).all(from, to);
   const daily = db.prepare(`
     SELECT date(created_at) AS day, COUNT(*) AS views
-    FROM pageviews WHERE created_at >= date('now','-6 days')
+    FROM pageviews WHERE ${R}
     GROUP BY day ORDER BY day
-  `).all();
+  `).all(from, to);
   const by_affiliate = db.prepare(`
     SELECT a.name, a.code, COUNT(p.id) AS views
-    FROM affiliates a LEFT JOIN pageviews p ON p.ref = a.code
+    FROM affiliates a JOIN pageviews p ON p.ref = a.code
+    WHERE date(p.created_at) BETWEEN ? AND ?
     GROUP BY a.id HAVING views > 0 ORDER BY views DESC LIMIT 15
-  `).all();
-  // Which affiliate got clicks on which product.
+  `).all(from, to);
   const affiliate_products = db.prepare(`
     SELECT a.name AS affiliate_name, a.code, pv.path, pr.name AS product_name, COUNT(*) AS views
     FROM pageviews pv
     JOIN affiliates a ON a.code = pv.ref
     LEFT JOIN products pr ON ('/product/' || pr.slug) = pv.path
-    WHERE pv.ref != '' AND pv.path LIKE '/product/%'
+    WHERE pv.ref != '' AND pv.path LIKE '/product/%' AND date(pv.created_at) BETWEEN ? AND ?
     GROUP BY a.code, pv.path ORDER BY views DESC LIMIT 50
-  `).all();
-  res.json({ total, today, week, via_affiliate, orders, conversion, top_pages, daily, by_affiliate, affiliate_products });
+  `).all(from, to);
+  res.json({ from, to, total, views, orders, conversion, via_affiliate, top_pages, daily, by_affiliate, affiliate_products });
 });
 
 /* ---------- Payouts (admin side) ---------- */
