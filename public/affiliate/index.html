@@ -108,10 +108,11 @@
     .msg-compose { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
     .msg-compose input { flex: 1; }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
-    .asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+    .asset-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
     .asset { border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.03); }
-    .asset-img { aspect-ratio: 1; background: radial-gradient(ellipse, rgba(30,63,160,0.3), rgba(6,11,26,0.4)); display: grid; place-items: center; }
+    .asset-img { aspect-ratio: 16 / 10; background: radial-gradient(ellipse, rgba(30,63,160,0.3), rgba(6,11,26,0.4)); display: grid; place-items: center; }
     .asset-img img { width: 100%; height: 100%; object-fit: cover; }
+    @media (max-width: 700px) { .asset-grid { grid-template-columns: 1fr; } }
     .asset-body { padding: 12px; }
     .asset-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 2px; }
     .asset-prod { font-size: 0.72rem; color: var(--gold-300); margin-bottom: 8px; }
