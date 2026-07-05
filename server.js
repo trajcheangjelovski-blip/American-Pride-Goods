@@ -440,8 +440,9 @@ app.post('/api/create-checkout-session', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: lineItems,
-      shipping_address_collection: { allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'MK'] },
+      shipping_address_collection: { allowed_countries: ['US', 'CA', 'GB', 'AU', 'IE', 'NZ', 'DE', 'FR'] },
       phone_number_collection: { enabled: true }, // require a phone number (email is always collected)
+      locale: 'en', // force English checkout + US-style phone default (not Macedonian)
       metadata: { ref },
       success_url: `${currentDomain()}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${currentDomain()}/cancel.html`
