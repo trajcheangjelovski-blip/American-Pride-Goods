@@ -158,7 +158,7 @@ app.get('/', async (req, res) => {
     image: img
   };
   res.type('html').send(renderPage('index.html', buildMetaTags({
-    title: 'American Pride Store — Official Trump Merchandise',
+    title: 'American Pride Store — Official Patriot Merchandise',
     description: 'Premium American Trump merchandise. Hats, tees, flags & more. Secure checkout with Stripe.',
     url, image: img, type: 'website', jsonld
   })));
