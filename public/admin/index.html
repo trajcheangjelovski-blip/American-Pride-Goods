@@ -676,7 +676,15 @@
       </div>
       <div class="editor" id="bf-content" contenteditable="true" data-placeholder="Write your article here — just like WordPress. Select text and use the buttons above to format."></div>
 
-      <label>Products advertised inside this post <span class="muted" style="text-transform:none">— shown as an ad card in the middle of the article (leave empty = featured products automatically)</span></label>
+      <label>Ad display style <span class="muted" style="text-transform:none">— how the product ad appears in the middle of the article</span></label>
+      <select id="bf-adstyle">
+        <option value="banner">Single banner (big card)</option>
+        <option value="spotlight">Spotlight (1 large centered product)</option>
+        <option value="grid2">Two per row</option>
+        <option value="grid3">Three per row</option>
+        <option value="strip">Compact strip (side-scroll)</option>
+      </select>
+      <label>Products advertised inside this post <span class="muted" style="text-transform:none">— pick up to 6 (leave empty = featured products automatically)</span></label>
       <div class="ad-picker" id="bf-products"></div>
 
       <div class="check-row"><button type="button" class="toggle on" id="bf-published"></button><label>Published (visible on the blog)</label></div>
@@ -1329,6 +1337,7 @@
       $('#bf-file').value = '';
       $('#bf-preview').innerHTML = p && p.cover ? `<img src="${esc(p.cover)}" style="width:100%;height:100%;object-fit:cover"/>` : '<span class="muted" style="font-size:0.7rem">preview</span>';
       $('#bf-content').innerHTML = p ? p.content : '';
+      $('#bf-adstyle').value = (p && p.ad_style) || 'banner';
       toggleBtn($('#bf-published'), p ? p.published : 1);
       let picked = [];
       try { picked = p && p.product_slugs ? JSON.parse(p.product_slugs) : []; } catch {}
@@ -1348,7 +1357,8 @@
         excerpt: $('#bf-excerpt').value,
         content: $('#bf-content').innerHTML,
         cover: $('#bf-cover').value,
-        product_slugs: [...$('#bf-products').querySelectorAll('input:checked')].map((i) => i.value).slice(0, 4),
+        product_slugs: [...$('#bf-products').querySelectorAll('input:checked')].map((i) => i.value).slice(0, 6),
+        ad_style: $('#bf-adstyle').value,
         published: $('#bf-published').classList.contains('on') ? 1 : 0
       };
       try {

@@ -96,46 +96,64 @@
           <div class="post-content" id="post-content"></div>
         </article>`;
 
-      // Render the article body, then inject product ads mid-content
-      // (the classic "inline product embed" pattern from WordPress/Shopify blogs).
+      // Render the article body, then inject a product-ad block mid-content
+      // in the layout the admin chose for this post.
       const contentEl = document.getElementById('post-content');
       contentEl.innerHTML = p.content || '';
-      const blocks = () => [...contentEl.children].filter((el) => !el.classList.contains('post-ad'));
 
-      function adCard(prod) {
-        const sale = window.onSale(prod);
-        const price = sale
-          ? `<span class="ad-price">$${(prod.sale_price / 100).toFixed(2)}</span> <span class="ad-price-old">$${(prod.price / 100).toFixed(2)}</span>`
-          : `<span class="ad-price">$${(prod.price / 100).toFixed(2)}</span>`;
-        const hasOptions = (prod.options || []).length > 0;
-        const el = document.createElement('aside');
-        el.className = 'post-ad';
-        el.innerHTML = `
+      const priceHtml = (prod) => window.onSale(prod)
+        ? `<span class="ad-price">$${(prod.sale_price / 100).toFixed(2)}</span> <span class="ad-price-old">$${(prod.price / 100).toFixed(2)}</span>`
+        : `<span class="ad-price">$${(prod.price / 100).toFixed(2)}</span>`;
+      const buyBtns = (prod, big) => (prod.options || []).length
+        ? `<a class="btn btn-primary ad-btn" href="/product/${esc(prod.slug)}${q}">CHOOSE OPTIONS</a>`
+        : `<button class="btn btn-primary ad-btn" onclick="addToCart('${esc(prod.slug)}')">ADD TO CART</button>${big ? `<button class="btn btn-gold ad-btn" onclick="buyNow('${esc(prod.slug)}', this)">BUY NOW ${window.LOCK || ''}</button>` : ''}`;
+
+      // Big horizontal banner (image left, details right)
+      const bannerCard = (prod) => `
+        <aside class="post-ad">
           <span class="ad-tag">★ FEATURED GEAR</span>
           <a class="ad-img" href="/product/${esc(prod.slug)}${q}"><img src="${esc(prod.image)}" alt="${esc(prod.name)}" loading="lazy" /></a>
           <div class="ad-body">
             <h4><a href="/product/${esc(prod.slug)}${q}">${esc(prod.name)}</a></h4>
             <p>${esc(prod.description || '')}</p>
-            <div class="ad-row">
-              ${price}
-              ${hasOptions
-                ? `<a class="btn btn-primary ad-btn" href="/product/${esc(prod.slug)}${q}">CHOOSE OPTIONS</a>`
-                : `<button class="btn btn-primary ad-btn" onclick="addToCart('${esc(prod.slug)}')">ADD TO CART</button>
-                   <button class="btn btn-gold ad-btn" onclick="buyNow('${esc(prod.slug)}', this)">BUY NOW ${window.LOCK || ''}</button>`}
-            </div>
-          </div>`;
-        return el;
+            <div class="ad-row">${priceHtml(prod)}${buyBtns(prod, true)}</div>
+          </div>
+        </aside>`;
+      // Compact card (image top) for grids and the strip
+      const miniCard = (prod) => `
+        <div class="ad-mini">
+          <a class="ad-mini-img" href="/product/${esc(prod.slug)}${q}"><img src="${esc(prod.image)}" alt="${esc(prod.name)}" loading="lazy" /></a>
+          <div class="ad-mini-body">
+            <h4><a href="/product/${esc(prod.slug)}${q}">${esc(prod.name)}</a></h4>
+            <div class="ad-mini-foot">${priceHtml(prod)}${buyBtns(prod, false)}</div>
+          </div>
+        </div>`;
+      // Big single spotlight (image on top, centered)
+      const spotCard = (prod) => `
+        <div class="ad-spot">
+          <a class="ad-spot-img" href="/product/${esc(prod.slug)}${q}"><img src="${esc(prod.image)}" alt="${esc(prod.name)}" loading="lazy" /></a>
+          <h4><a href="/product/${esc(prod.slug)}${q}">${esc(prod.name)}</a></h4>
+          <p>${esc(prod.description || '')}</p>
+          <div class="ad-row">${priceHtml(prod)}${buyBtns(prod, true)}</div>
+        </div>`;
+
+      function buildAdBlock(list, style) {
+        const wrap = document.createElement('div');
+        wrap.className = 'post-ads';
+        let inner;
+        if (style === 'spotlight') inner = spotCard(list[0]);
+        else if (style === 'grid2' || style === 'grid3') inner = `<div class="ad-grid ${style === 'grid3' ? 'cols-3' : 'cols-2'}">${list.map(miniCard).join('')}</div>`;
+        else if (style === 'strip') inner = `<div class="ad-strip">${list.map(miniCard).join('')}</div>`;
+        else inner = list.map(bannerCard).join(''); // banner (default), stacked
+        wrap.innerHTML = `<div class="post-ads-head">🇺🇸 Featured gear for patriots</div>${inner}`;
+        return wrap;
       }
 
       if (ads && ads.length) {
-        const b = blocks();
-        if (b.length >= 2) {
-          const mid = b[Math.floor(b.length / 2) - (b.length % 2 === 0 ? 1 : 0)];
-          mid.after(adCard(ads[0]));
-        } else {
-          contentEl.appendChild(adCard(ads[0]));
-        }
-        if (ads[1]) contentEl.appendChild(adCard(ads[1]));
+        const kids = [...contentEl.children];
+        const block = buildAdBlock(ads, p.ad_style || 'banner');
+        if (kids.length >= 2) kids[Math.floor(kids.length / 2) - 1].after(block);
+        else contentEl.appendChild(block);
       }
 
       if (more && more.length) {

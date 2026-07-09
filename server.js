@@ -396,6 +396,10 @@ app.get('/api/post/:slug', (req, res) => {
   const post = db.prepare('SELECT * FROM posts WHERE slug = ? AND published = 1').get(req.params.slug);
   if (!post) return res.status(404).json({ error: 'Post not found' });
 
+  // How many products the chosen ad layout shows.
+  const style = post.ad_style || 'banner';
+  const limit = style === 'grid3' ? 6 : style === 'grid2' || style === 'strip' ? 4 : style === 'spotlight' ? 1 : 2;
+
   // Products advertised inside the post: admin's picks, else featured products.
   let slugs = [];
   try { slugs = JSON.parse(post.product_slugs) || []; } catch {}
@@ -409,10 +413,11 @@ app.get('/api/post/:slug', (req, res) => {
   if (!ads.length) {
     ads = db.prepare(`
       SELECT p.slug AS id, p.slug, p.name, p.description, p.price, p.sale_price, p.image, p.badge, p.options
-      FROM products p WHERE p.active = 1 ORDER BY p.featured DESC, RANDOM() LIMIT 2`).all();
+      FROM products p WHERE p.active = 1 ORDER BY p.featured DESC, RANDOM() LIMIT ?`).all(limit);
   }
+  ads = ads.slice(0, limit);
   const affiliate = affiliateByRef(req.query.ref);
-  for (const a of ads.slice(0, 2)) {
+  for (const a of ads) {
     try { a.options = JSON.parse(a.options) || []; } catch { a.options = []; }
     applyAffiliatePrice(a, affiliate);
   }
@@ -422,7 +427,7 @@ app.get('/api/post/:slug', (req, res) => {
     WHERE published = 1 AND slug != ? ORDER BY created_at DESC LIMIT 3
   `).all(post.slug);
 
-  res.json({ post: { slug: post.slug, title: post.title, excerpt: post.excerpt, content: post.content, cover: post.cover, created_at: post.created_at }, ads: ads.slice(0, 2), more });
+  res.json({ post: { slug: post.slug, title: post.title, excerpt: post.excerpt, content: post.content, cover: post.cover, created_at: post.created_at, ad_style: style }, ads, more });
 });
 
 app.post('/api/track/:code', (req, res) => {
@@ -962,6 +967,7 @@ function sanitizeHtml(html) {
     .slice(0, 200000);
 }
 
+const AD_STYLES = ['banner', 'grid2', 'grid3', 'strip', 'spotlight'];
 function postFields(body) {
   let slugs = body.product_slugs;
   if (typeof slugs === 'string') { try { slugs = JSON.parse(slugs); } catch { slugs = []; } }
@@ -971,7 +977,8 @@ function postFields(body) {
     excerpt: String(body.excerpt || '').trim().slice(0, 400),
     content: sanitizeHtml(body.content),
     cover: String(body.cover || '').trim().slice(0, 300),
-    product_slugs: JSON.stringify(slugs.map((s) => String(s).slice(0, 60)).slice(0, 4)),
+    product_slugs: JSON.stringify(slugs.map((s) => String(s).slice(0, 60)).slice(0, 6)),
+    ad_style: AD_STYLES.includes(body.ad_style) ? body.ad_style : 'banner',
     published: body.published ? 1 : 0
   };
 }
@@ -991,9 +998,9 @@ app.post('/api/admin/posts', requireAdmin, (req, res) => {
   let slug = base, n = 2;
   while (db.prepare('SELECT 1 FROM posts WHERE slug = ?').get(slug)) slug = `${base}-${n++}`;
   db.prepare(`
-    INSERT INTO posts (slug, title, excerpt, content, cover, product_slugs, published)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(slug, f.title, f.excerpt, f.content, f.cover, f.product_slugs, f.published);
+    INSERT INTO posts (slug, title, excerpt, content, cover, product_slugs, ad_style, published)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(slug, f.title, f.excerpt, f.content, f.cover, f.product_slugs, f.ad_style, f.published);
   res.json({ ok: true, slug });
 });
 
@@ -1002,9 +1009,9 @@ app.put('/api/admin/posts/:slug', requireAdmin, (req, res) => {
   const f = postFields(req.body);
   if (!f.title) return res.status(400).json({ error: 'Post title is required.' });
   db.prepare(`
-    UPDATE posts SET title = ?, excerpt = ?, content = ?, cover = ?, product_slugs = ?, published = ?, updated_at = datetime('now')
+    UPDATE posts SET title = ?, excerpt = ?, content = ?, cover = ?, product_slugs = ?, ad_style = ?, published = ?, updated_at = datetime('now')
     WHERE slug = ?
-  `).run(f.title, f.excerpt, f.content, f.cover, f.product_slugs, f.published, req.params.slug);
+  `).run(f.title, f.excerpt, f.content, f.cover, f.product_slugs, f.ad_style, f.published, req.params.slug);
   res.json({ ok: true });
 });
 

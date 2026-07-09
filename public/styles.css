@@ -1409,6 +1409,62 @@ section { padding: 110px 24px; }
 .ad-price-old { color: var(--grey-400); text-decoration: line-through; font-size: 0.95rem; font-weight: 600; }
 .ad-btn { padding: 11px 20px; font-size: 0.8rem; }
 
+/* ad block wrapper + heading */
+.post-ads { margin: 38px 0; }
+.post-ads .post-ad { margin: 0 0 16px; }
+.post-ads-head {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  color: var(--gold-300);
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+/* grid (2-up / 3-up) + strip of compact cards */
+.ad-grid { display: grid; gap: 16px; }
+.ad-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.ad-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.ad-strip { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; }
+.ad-strip .ad-mini { flex: 0 0 240px; scroll-snap-align: start; }
+
+.ad-mini {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(245, 197, 66, 0.25);
+}
+.ad-mini-img { aspect-ratio: 1; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, rgba(30, 63, 160, 0.4), rgba(6, 11, 26, 0.5)); }
+.ad-mini-img img { width: 82%; height: 82%; object-fit: contain; transition: transform 0.4s ease; }
+.ad-mini:hover .ad-mini-img img { transform: scale(1.07); }
+.ad-mini-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.ad-mini-body h4 { font-size: 0.98rem; font-weight: 800; line-height: 1.3; }
+.ad-mini-body h4 a { color: var(--white); text-decoration: none; }
+.ad-mini-body h4 a:hover { color: var(--gold-300); }
+.ad-mini-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.ad-mini-foot .ad-price { font-size: 1.15rem; }
+.ad-mini-foot .ad-btn { width: 100%; justify-content: center; padding: 10px; }
+
+/* spotlight (big single, centered) */
+.ad-spot {
+  text-align: center;
+  padding: 30px;
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse 80% 90% at 50% 0%, rgba(224, 22, 43, 0.16), transparent),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(245, 197, 66, 0.3);
+}
+.ad-spot-img { display: block; width: 260px; height: 260px; margin: 0 auto 18px; border-radius: 18px; background: radial-gradient(ellipse at 50% 40%, rgba(30, 63, 160, 0.4), rgba(6, 11, 26, 0.5)); display: grid; place-items: center; }
+.ad-spot-img img { width: 84%; height: 84%; object-fit: contain; }
+.ad-spot h4 { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+.ad-spot h4 a { color: var(--white); text-decoration: none; }
+.ad-spot p { color: var(--grey-400); font-size: 0.92rem; line-height: 1.6; max-width: 460px; margin: 0 auto 16px; }
+.ad-spot .ad-row { justify-content: center; }
+
 @media (max-width: 700px) {
   .blog-hero { padding: 110px 18px 0; }
   .post-card-hero { flex-direction: column; }
@@ -1416,6 +1472,10 @@ section { padding: 110px 24px; }
   .post-wrap { padding: 105px 18px 40px; }
   .post-ad { flex-direction: column; text-align: center; }
   .ad-row { justify-content: center; }
+  .ad-grid.cols-2, .ad-grid.cols-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 460px) {
+  .ad-grid.cols-2, .ad-grid.cols-3 { grid-template-columns: 1fr; }
 }
 
 /* ============================================================

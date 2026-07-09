@@ -177,6 +177,10 @@ const marketingColumns = db.prepare('PRAGMA table_info(marketing_assets)').all()
 if (!marketingColumns.includes('description')) {
   db.exec("ALTER TABLE marketing_assets ADD COLUMN description TEXT DEFAULT ''");
 }
+const postColumns = db.prepare('PRAGMA table_info(posts)').all().map((c) => c.name);
+if (!postColumns.includes('ad_style')) {
+  db.exec("ALTER TABLE posts ADD COLUMN ad_style TEXT DEFAULT 'banner'");
+}
 const orderColumns = db.prepare('PRAGMA table_info(orders)').all().map((c) => c.name);
 if (!orderColumns.includes('profit')) {
   db.exec('ALTER TABLE orders ADD COLUMN profit INTEGER DEFAULT 0');
