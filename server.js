@@ -4,6 +4,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const express = require('express');
 const sharp = require('sharp');
+const geoip = require('geoip-lite');
 const db = require('./db');
 
 const Stripe = require('stripe');
@@ -40,7 +41,22 @@ function getStripe() {
   return _stripeClient;
 }
 
+// We sit behind nginx, which forwards the visitor's real IP in X-Forwarded-For.
+app.set('trust proxy', true);
 app.use(express.json({ limit: '6mb' }));
+
+// Best-effort 2-letter country code for the requesting visitor (offline GeoIP).
+// Only the country is derived and stored — never the raw IP address.
+function countryOf(req) {
+  try {
+    let ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+      || req.headers['x-real-ip'] || req.ip || (req.socket && req.socket.remoteAddress) || '';
+    ip = ip.replace(/^::ffff:/, ''); // unwrap IPv4-mapped IPv6
+    if (!ip || ip === '::1' || ip === '127.0.0.1') return '';
+    const geo = geoip.lookup(ip);
+    return geo && geo.country ? geo.country : '';
+  } catch { return ''; }
+}
 
 /* ============================================================
    SEO / social meta (server-rendered so crawlers see it)
@@ -444,7 +460,7 @@ app.post('/api/pageview', (req, res) => {
   if (!path.startsWith('/') || path.startsWith('/admin') || path.startsWith('/api')) return res.json({ ok: false });
   path = path.split('?')[0].split('#')[0];
   const ref = /^[A-Za-z0-9]{4,20}$/.test(String(req.body.ref || '')) ? req.body.ref.toUpperCase() : '';
-  db.prepare('INSERT INTO pageviews (path, ref) VALUES (?, ?)').run(path, ref);
+  db.prepare('INSERT INTO pageviews (path, ref, country) VALUES (?, ?, ?)').run(path, ref, countryOf(req));
   res.json({ ok: true });
 });
 
@@ -1282,6 +1298,12 @@ app.get('/api/admin/traffic', requireAdmin, (req, res) => {
     FROM pageviews WHERE ${R}
     GROUP BY day ORDER BY day
   `).all(from, to);
+  const by_country = db.prepare(`
+    SELECT country, COUNT(*) AS views FROM pageviews
+    WHERE ${R} AND country != ''
+    GROUP BY country ORDER BY views DESC LIMIT 30
+  `).all(from, to);
+  const unknown_country = db.prepare(`SELECT COUNT(*) AS c FROM pageviews WHERE ${R} AND country = ''`).get(from, to).c;
   const by_affiliate = db.prepare(`
     SELECT a.name, a.code, COUNT(p.id) AS views
     FROM affiliates a JOIN pageviews p ON p.ref = a.code
@@ -1299,7 +1321,7 @@ app.get('/api/admin/traffic', requireAdmin, (req, res) => {
       AND date(pv.created_at) BETWEEN ? AND ?
     GROUP BY a.code, pv.path ORDER BY views DESC LIMIT 50
   `).all(from, to);
-  res.json({ from, to, total, views, orders, conversion, add_to_cart, cart_conversion, cart_by_product, via_affiliate, top_pages, daily, by_affiliate, affiliate_products });
+  res.json({ from, to, total, views, orders, conversion, add_to_cart, cart_conversion, cart_by_product, via_affiliate, top_pages, daily, by_country, unknown_country, by_affiliate, affiliate_products });
 });
 
 /* ---------- Payouts (admin side) ---------- */

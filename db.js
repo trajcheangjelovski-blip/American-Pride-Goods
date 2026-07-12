@@ -191,6 +191,10 @@ const postColumns = db.prepare('PRAGMA table_info(posts)').all().map((c) => c.na
 if (!postColumns.includes('ad_style')) {
   db.exec("ALTER TABLE posts ADD COLUMN ad_style TEXT DEFAULT 'banner'");
 }
+const pageviewColumns = db.prepare('PRAGMA table_info(pageviews)').all().map((c) => c.name);
+if (!pageviewColumns.includes('country')) {
+  db.exec("ALTER TABLE pageviews ADD COLUMN country TEXT DEFAULT ''");
+}
 const orderColumns = db.prepare('PRAGMA table_info(orders)').all().map((c) => c.name);
 if (!orderColumns.includes('profit')) {
   db.exec('ALTER TABLE orders ADD COLUMN profit INTEGER DEFAULT 0');

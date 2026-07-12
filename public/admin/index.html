@@ -365,6 +365,10 @@
           </div>
         </div>
         <div class="panel" style="margin-top:20px">
+          <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">🌍 Visitors by country <span class="muted" style="font-weight:400;font-size:0.8rem">— where clicks came from (period)</span></h3>
+          <div class="table-scroll"><table><thead><tr><th>Country</th><th>Clicks</th><th>Share</th></tr></thead><tbody id="by-country"></tbody></table></div>
+        </div>
+        <div class="panel" style="margin-top:20px">
           <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">🛒 Add-to-cart clicks by product <span class="muted" style="font-weight:400;font-size:0.8rem">— how many times each product was added to a cart (period)</span></h3>
           <div class="table-scroll"><table><thead><tr><th>Product</th><th>Add to cart</th><th>Via affiliate</th></tr></thead><tbody id="cart-by-product"></tbody></table></div>
         </div>
@@ -965,6 +969,18 @@
       $('#aff-traffic').innerHTML = t.by_affiliate.length
         ? t.by_affiliate.map((a) => `<tr><td>${esc(a.name)}</td><td><code style="color:var(--gold-300)">${esc(a.code)}</code></td><td><b>${a.views.toLocaleString('en-US')}</b></td></tr>`).join('')
         : '<tr><td colspan="3" class="empty">No affiliate-referred visits yet.</td></tr>';
+
+      const countryName = (code) => { try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code; } catch { return code; } };
+      const flagOf = (code) => /^[A-Z]{2}$/.test(code) ? String.fromCodePoint(...[...code].map((c) => 127397 + c.charCodeAt(0))) : '🏳️';
+      const countryTotal = (t.by_country || []).reduce((n, c) => n + c.views, 0) + (t.unknown_country || 0);
+      const countryRows = (t.by_country || []).map((c) => {
+        const share = countryTotal > 0 ? Math.round((c.views / countryTotal) * 1000) / 10 : 0;
+        return `<tr><td>${flagOf(c.country)} ${esc(countryName(c.country))} <span class="muted">(${esc(c.country)})</span></td><td><b>${c.views.toLocaleString('en-US')}</b></td><td>${share}%</td></tr>`;
+      });
+      if (t.unknown_country) countryRows.push(`<tr><td>🏳️ Unknown <span class="muted">(local / hidden IP)</span></td><td><b>${t.unknown_country.toLocaleString('en-US')}</b></td><td>${countryTotal > 0 ? Math.round((t.unknown_country / countryTotal) * 1000) / 10 : 0}%</td></tr>`);
+      $('#by-country').innerHTML = countryRows.length
+        ? countryRows.join('')
+        : '<tr><td colspan="3" class="empty">No visits recorded in this period yet.</td></tr>';
 
       $('#cart-by-product').innerHTML = (t.cart_by_product && t.cart_by_product.length)
         ? t.cart_by_product.map((c) => `<tr><td>${esc(c.product_name)}</td><td><b>${c.adds.toLocaleString('en-US')}</b></td><td>${(c.via_affiliate || 0).toLocaleString('en-US')}</td></tr>`).join('')
