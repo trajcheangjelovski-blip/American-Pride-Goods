@@ -153,6 +153,16 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_pageviews_created ON pageviews (created_at);
   CREATE INDEX IF NOT EXISTS idx_pageviews_path ON pageviews (path);
+
+  CREATE TABLE IF NOT EXISTS events (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    type       TEXT NOT NULL,          -- 'add_to_cart' | 'buy_now'
+    slug       TEXT DEFAULT '',        -- product slug
+    ref        TEXT DEFAULT '',        -- affiliate code (if referred)
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_events_created ON events (created_at);
+  CREATE INDEX IF NOT EXISTS idx_events_type ON events (type);
 `);
 
 /* ---------- Migrations for older databases ---------- */

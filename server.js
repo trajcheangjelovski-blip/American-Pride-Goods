@@ -448,6 +448,17 @@ app.post('/api/pageview', (req, res) => {
   res.json({ ok: true });
 });
 
+// Storefront interaction logger — records Add-to-cart / Buy-now button clicks
+// so both admin and affiliates can see how many people click "Add to cart".
+app.post('/api/event', (req, res) => {
+  const type = String(req.body.type || '');
+  if (type !== 'add_to_cart' && type !== 'buy_now') return res.json({ ok: false });
+  const slug = String(req.body.slug || '').slice(0, 100);
+  const ref = /^[A-Za-z0-9]{4,20}$/.test(String(req.body.ref || '')) ? req.body.ref.toUpperCase() : '';
+  db.prepare('INSERT INTO events (type, slug, ref) VALUES (?, ?, ?)').run(type, slug, ref);
+  res.json({ ok: true });
+});
+
 /* ---------- Stripe checkout ---------- */
 app.post('/api/create-checkout-session', async (req, res) => {
   try {
@@ -735,16 +746,26 @@ app.get('/api/affiliate/stats', requireAffiliate, (req, res) => {
   const views = db.prepare('SELECT COUNT(*) AS c FROM pageviews WHERE ref = ? AND date(created_at) BETWEEN ? AND ?').get(code, from, to).c;
   const o = db.prepare('SELECT COUNT(*) AS orders, COALESCE(SUM(amount_total),0) AS sales, COALESCE(SUM(commission),0) AS earned FROM orders WHERE affiliate_id = ? AND date(created_at) BETWEEN ? AND ?').get(id, from, to);
   const conversion = views > 0 ? Math.round((o.orders / views) * 1000) / 10 : 0;
+  const add_to_cart = db.prepare("SELECT COUNT(*) AS c FROM events WHERE type = 'add_to_cart' AND ref = ? AND date(created_at) BETWEEN ? AND ?").get(code, from, to).c;
+  // Add-to-cart clicks per product, keyed by product slug so the client can
+  // line them up next to the click counts.
+  const cartRows = db.prepare(`
+    SELECT e.slug, COUNT(*) AS adds FROM events e
+    WHERE e.type = 'add_to_cart' AND e.ref = ? AND date(e.created_at) BETWEEN ? AND ?
+    GROUP BY e.slug
+  `).all(code, from, to);
+  const carts_by_slug = {};
+  cartRows.forEach((r) => { carts_by_slug[r.slug] = r.adds; });
   const by_product = db.prepare(`
-    SELECT pv.path, COALESCE(pr.name, '📝 ' || po.title) AS product_name, COUNT(*) AS views
+    SELECT pv.path, pr.slug AS product_slug, COALESCE(pr.name, '📝 ' || po.title) AS product_name, COUNT(*) AS views
     FROM pageviews pv
     LEFT JOIN products pr ON ('/product/' || pr.slug) = pv.path
     LEFT JOIN posts po ON ('/blog/' || po.slug) = pv.path
     WHERE pv.ref = ? AND (pv.path LIKE '/product/%' OR pv.path LIKE '/blog/%')
       AND date(pv.created_at) BETWEEN ? AND ?
     GROUP BY pv.path ORDER BY views DESC LIMIT 100
-  `).all(code, from, to);
-  res.json({ from, to, views, orders: o.orders, sales: o.sales, earned: o.earned, conversion, by_product });
+  `).all(code, from, to).map((r) => ({ ...r, adds: carts_by_slug[r.product_slug] || 0 }));
+  res.json({ from, to, views, orders: o.orders, sales: o.sales, earned: o.earned, conversion, add_to_cart, by_product });
 });
 
 // Marketing assets the affiliate can download / copy
@@ -869,6 +890,7 @@ app.get('/api/admin/summary', requireAdmin, (req, res) => {
     revenue: db.prepare('SELECT COALESCE(SUM(amount_total), 0) AS s FROM orders').get().s,
     profit: db.prepare('SELECT COALESCE(SUM(profit), 0) AS s FROM orders').get().s,
     views: db.prepare('SELECT COUNT(*) AS c FROM pageviews').get().c,
+    add_to_cart: db.prepare("SELECT COUNT(*) AS c FROM events WHERE type = 'add_to_cart'").get().c,
     commissions: db.prepare('SELECT COALESCE(SUM(commission), 0) AS s FROM orders').get().s,
     affiliates: db.prepare('SELECT COUNT(*) AS c FROM affiliates').get().c,
     pending_affiliates: db.prepare("SELECT COUNT(*) AS c FROM affiliates WHERE status = 'pending'").get().c,
@@ -1234,6 +1256,18 @@ app.get('/api/admin/traffic', requireAdmin, (req, res) => {
   const via_affiliate = db.prepare(`SELECT COUNT(*) AS c FROM pageviews WHERE ${R} AND ref != ''`).get(from, to).c;
   const orders = db.prepare(`SELECT COUNT(*) AS c FROM orders WHERE ${R}`).get(from, to).c;
   const conversion = views > 0 ? Math.round((orders / views) * 1000) / 10 : 0;
+  const add_to_cart = db.prepare(`SELECT COUNT(*) AS c FROM events WHERE type = 'add_to_cart' AND ${R}`).get(from, to).c;
+  const cart_conversion = add_to_cart > 0 ? Math.round((orders / add_to_cart) * 1000) / 10 : 0;
+
+  // Which products get added to the cart most (period), and via affiliate links
+  const cart_by_product = db.prepare(`
+    SELECT e.slug, COALESCE(pr.name, e.slug) AS product_name,
+           COUNT(*) AS adds,
+           SUM(CASE WHEN e.ref != '' THEN 1 ELSE 0 END) AS via_affiliate
+    FROM events e LEFT JOIN products pr ON pr.slug = e.slug
+    WHERE e.type = 'add_to_cart' AND date(e.created_at) BETWEEN ? AND ?
+    GROUP BY e.slug ORDER BY adds DESC LIMIT 20
+  `).all(from, to);
 
   const top_pages = db.prepare(`
     SELECT p.path, COUNT(*) AS views, COALESCE(pr.name, po.title) AS product_name
@@ -1265,7 +1299,7 @@ app.get('/api/admin/traffic', requireAdmin, (req, res) => {
       AND date(pv.created_at) BETWEEN ? AND ?
     GROUP BY a.code, pv.path ORDER BY views DESC LIMIT 50
   `).all(from, to);
-  res.json({ from, to, total, views, orders, conversion, via_affiliate, top_pages, daily, by_affiliate, affiliate_products });
+  res.json({ from, to, total, views, orders, conversion, add_to_cart, cart_conversion, cart_by_product, via_affiliate, top_pages, daily, by_affiliate, affiliate_products });
 });
 
 /* ---------- Payouts (admin side) ---------- */

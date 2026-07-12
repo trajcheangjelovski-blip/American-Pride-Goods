@@ -365,6 +365,10 @@
           </div>
         </div>
         <div class="panel" style="margin-top:20px">
+          <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">🛒 Add-to-cart clicks by product <span class="muted" style="font-weight:400;font-size:0.8rem">— how many times each product was added to a cart (period)</span></h3>
+          <div class="table-scroll"><table><thead><tr><th>Product</th><th>Add to cart</th><th>Via affiliate</th></tr></thead><tbody id="cart-by-product"></tbody></table></div>
+        </div>
+        <div class="panel" style="margin-top:20px">
           <h3 style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08)">Affiliate clicks by page <span class="muted" style="font-weight:400;font-size:0.8rem">— which affiliate got clicks on which product or blog post (📝)</span></h3>
           <div class="table-scroll"><table><thead><tr><th>Affiliate</th><th>Product</th><th>Clicks</th></tr></thead><tbody id="aff-product-traffic"></tbody></table></div>
         </div>
@@ -776,6 +780,7 @@
       $('#dash-cards').innerHTML = `
         <div class="stat-card"><div class="k">Revenue</div><div class="v gold">${fmt(s.revenue)}</div></div>
         <div class="stat-card"><div class="k">Page visits</div><div class="v">${(s.views || 0).toLocaleString('en-US')}</div></div>
+        <div class="stat-card"><div class="k">🛒 Add to cart</div><div class="v green">${(s.add_to_cart || 0).toLocaleString('en-US')}</div></div>
         <div class="stat-card"><div class="k">Orders</div><div class="v">${s.orders}</div></div>
         <div class="stat-card"><div class="k">Profit</div><div class="v gold">${fmt(s.profit || 0)}</div></div>
         <div class="stat-card"><div class="k">Products</div><div class="v">${s.products}</div></div>
@@ -933,7 +938,9 @@
       $('#chart-title').textContent = 'Views per day (' + (from === to ? from : from + ' → ' + to) + ')';
       $('#traffic-cards').innerHTML = `
         <div class="stat-card"><div class="k">Views (period)</div><div class="v gold">${t.views.toLocaleString('en-US')}</div></div>
+        <div class="stat-card"><div class="k">🛒 Add to cart (period)</div><div class="v green">${(t.add_to_cart || 0).toLocaleString('en-US')}</div></div>
         <div class="stat-card"><div class="k">Orders (period)</div><div class="v">${t.orders.toLocaleString('en-US')}</div></div>
+        <div class="stat-card"><div class="k">Cart → order rate</div><div class="v gold">${t.cart_conversion || 0}%</div></div>
         <div class="stat-card"><div class="k">Conversion (period)</div><div class="v gold">${t.conversion}%</div></div>
         <div class="stat-card"><div class="k">Via affiliate links</div><div class="v green">${t.via_affiliate.toLocaleString('en-US')}</div></div>
         <div class="stat-card"><div class="k">Total views (all time)</div><div class="v">${t.total.toLocaleString('en-US')}</div></div>`;
@@ -958,6 +965,10 @@
       $('#aff-traffic').innerHTML = t.by_affiliate.length
         ? t.by_affiliate.map((a) => `<tr><td>${esc(a.name)}</td><td><code style="color:var(--gold-300)">${esc(a.code)}</code></td><td><b>${a.views.toLocaleString('en-US')}</b></td></tr>`).join('')
         : '<tr><td colspan="3" class="empty">No affiliate-referred visits yet.</td></tr>';
+
+      $('#cart-by-product').innerHTML = (t.cart_by_product && t.cart_by_product.length)
+        ? t.cart_by_product.map((c) => `<tr><td>${esc(c.product_name)}</td><td><b>${c.adds.toLocaleString('en-US')}</b></td><td>${(c.via_affiliate || 0).toLocaleString('en-US')}</td></tr>`).join('')
+        : '<tr><td colspan="3" class="empty">No add-to-cart clicks in this period yet.</td></tr>';
 
       $('#aff-product-traffic').innerHTML = (t.affiliate_products && t.affiliate_products.length)
         ? t.affiliate_products.map((a) => {

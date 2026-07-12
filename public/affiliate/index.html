@@ -239,7 +239,7 @@
             </span>
           </div>
           <div class="period-sum" id="aff-period-sum"></div>
-          <div class="table-scroll"><table><thead><tr><th>Page (product or blog post)</th><th>Clicks</th></tr></thead><tbody id="aff-clicks"></tbody></table></div>
+          <div class="table-scroll"><table><thead><tr><th>Page (product or blog post)</th><th>Clicks</th><th>🛒 Add to cart</th></tr></thead><tbody id="aff-clicks"></tbody></table></div>
         </div>
         <div class="panel">
           <h3>Your referred orders</h3>
@@ -465,13 +465,14 @@
         const s = await api('/api/affiliate/stats?from=' + affPeriod.from + '&to=' + affPeriod.to);
         $('#aff-period-sum').innerHTML = `
           <div><div class="k">Clicks</div><div class="v gold">${s.views.toLocaleString('en-US')}</div></div>
+          <div><div class="k">🛒 Add to cart</div><div class="v" style="color:var(--green)">${(s.add_to_cart || 0).toLocaleString('en-US')}</div></div>
           <div><div class="k">Orders</div><div class="v">${s.orders.toLocaleString('en-US')}</div></div>
           <div><div class="k">Conversion</div><div class="v gold">${s.conversion}%</div></div>
           <div><div class="k">Sales</div><div class="v">${fmt(s.sales)}</div></div>
           <div><div class="k">Earned</div><div class="v" style="color:var(--green)">${fmt(s.earned)}</div></div>`;
         $('#aff-clicks').innerHTML = s.by_product.length
-          ? s.by_product.map((r) => `<tr><td>${esc(r.product_name || r.path)}</td><td><b>${r.views}</b></td></tr>`).join('')
-          : '<tr><td colspan="2" class="empty">No clicks in this period — share your links! 🔗</td></tr>';
+          ? s.by_product.map((r) => `<tr><td>${esc(r.product_name || r.path)}</td><td><b>${r.views}</b></td><td>${(r.adds || 0).toLocaleString('en-US')}</td></tr>`).join('')
+          : '<tr><td colspan="3" class="empty">No clicks in this period — share your links! 🔗</td></tr>';
       } catch {}
     }
     (function initAffPeriod() {

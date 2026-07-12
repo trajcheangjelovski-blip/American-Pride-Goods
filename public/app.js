@@ -114,6 +114,16 @@ function getRef() {
   }).catch(() => {});
 })();
 
+/* ---------- Storefront event tracking (add-to-cart / buy-now clicks) ---------- */
+function trackEvent(type, slug) {
+  fetch('/api/event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, slug, ref: getRef() })
+  }).catch(() => {});
+}
+window.trackEvent = trackEvent;
+
 /* ---------- Cart persistence ----------
    Shape: { [lineKey]: { slug, qty, options } }
    (old carts were { slug: qty } — migrated on load) */
@@ -223,6 +233,7 @@ async function buyNow(slug, btn) {
   const original = btn.innerHTML;
   btn.disabled = true;
   btn.textContent = 'REDIRECTING…';
+  trackEvent('buy_now', slug);
   try {
     const res = await fetch('/api/create-checkout-session', {
       method: 'POST',
@@ -244,6 +255,7 @@ function addToCart(slug, qty = 1, options = {}) {
   const key = lineKey(slug, options);
   const existing = cart[key];
   cart[key] = { slug, options, qty: Math.min((existing ? existing.qty : 0) + qty, 99) };
+  trackEvent('add_to_cart', slug);
   saveCart();
   renderCart();
   popCartCount();
